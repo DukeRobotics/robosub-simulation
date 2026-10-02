@@ -1,0 +1,22 @@
+services:
+  simulation:
+    build:
+      context: .
+      args:
+        BUILD_JOBS: ${BUILD_JOBS:-4}
+    image: robosub-simulation:pool
+    init: true
+    ports:
+      - "127.0.0.1:${SIMULATION_PORT:-8080}:8080"
+    shm_size: 512mb
+    stop_grace_period: 25s
+    environment:
+      # Software OpenGL makes the default work without host display/GPU mounts.
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      LP_NUM_THREADS: "4"
+      RENDER_QUALITY: ${RENDER_QUALITY:-low}
+      RENDER_RATE: ${RENDER_RATE:-20}
+      VIEW_WIDTH: ${VIEW_WIDTH:-1280}
+      VIEW_HEIGHT: ${VIEW_HEIGHT:-720}
+    volumes:
+      - ./src/robosub_simulation/config/pool.yaml:/config/pool.yaml:ro

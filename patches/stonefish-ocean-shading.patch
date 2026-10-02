@@ -1,0 +1,28 @@
+--- a/Library/src/graphics/OpenGLFlatOcean.cpp
++++ b/Library/src/graphics/OpenGLFlatOcean.cpp
+@@ -42,9 +42,11 @@
+     params.omega = 2.f;
+ 
+     GLint compiled;
++    GLuint shadingFragment = GLSLShader::LoadShader(GL_FRAGMENT_SHADER, "blinnPhong.frag", "", &compiled);
+     GLuint pcssFragment = GLSLShader::LoadShader(GL_FRAGMENT_SHADER, "lighting.frag", "", &compiled);
+ 	std::vector<GLuint> precompiled;
+     precompiled.push_back(OpenGLAtmosphere::getAtmosphereAPI());
++    precompiled.push_back(shadingFragment);
+     precompiled.push_back(pcssFragment);
+ 
+     //Surface rendering
+--- a/Library/src/graphics/OpenGLRealOcean.cpp
++++ b/Library/src/graphics/OpenGLRealOcean.cpp
+@@ -71,9 +71,11 @@
+ 
+     sources.clear();
+     GLint compiled;
++    GLuint shadingFragment = GLSLShader::LoadShader(GL_FRAGMENT_SHADER, "blinnPhong.frag", "", &compiled);
+     GLuint pcssFragment = GLSLShader::LoadShader(GL_FRAGMENT_SHADER, "lighting.frag", "", &compiled);
+     std::vector<GLuint> precompiled;
+     precompiled.push_back(OpenGLAtmosphere::getAtmosphereAPI());
++    precompiled.push_back(shadingFragment);
+     precompiled.push_back(pcssFragment);
+ 
+     //Surface rendering

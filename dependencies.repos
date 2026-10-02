@@ -1,0 +1,5 @@
+repositories:
+  src/stonefish_ros2:
+    type: git
+    url: https://github.com/patrykcieslak/stonefish_ros2.git
+    version: 6646e7ac25eed982f37f807abc7b545dbd2d6648

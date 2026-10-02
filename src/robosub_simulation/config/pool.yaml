@@ -1,0 +1,18 @@
+# Interior dimensions in metres. Replace these defaults with measured pool dimensions.
+length: 25.0
+width: 15.0
+depth: 3.0
+wall_thickness: 0.3
+floor_thickness: 0.3
+freeboard: 0.3
+
+# Calm freshwater; Jerlov water type is a dimensionless Stonefish value in [0, 1].
+water_density: 1000.0
+water_temperature: 26.0
+jerlov: 0.05
+# Sun angles in degrees. This first scene represents an outdoor pool.
+sun_azimuth: 120.0
+sun_elevation: 75.0
+# Geographic origin for later GPS/georeferenced sensors (Duke campus placeholder).
+latitude: 36.0014
+longitude: -78.9382

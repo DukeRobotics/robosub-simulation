@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="Full Model Assembly (1)">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.0678438517471901 -0.0264337175237818 0.0078096355235136"
+        rpy="0 0 0" />
+      <mass
+        value="14.4563329079817" />
+      <inertia
+        ixx="0.0677362335556626"
+        ixy="4.79827833992765E-06"
+        ixz="-0.00197858587330832"
+        iyy="0.148722745966905"
+        iyz="-1.1917268139358E-06"
+        izz="0.112206732014341" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full Model Assembly (1)/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Full Model Assembly (1)/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

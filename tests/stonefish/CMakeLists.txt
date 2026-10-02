@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.10)
+project(robosub_pool_smoke LANGUAGES CXX)
+find_package(Stonefish 1.6.0 EXACT REQUIRED)
+add_executable(pool_smoke pool_smoke.cpp)
+target_compile_features(pool_smoke PRIVATE cxx_std_17)
+target_link_libraries(pool_smoke PRIVATE Stonefish::Stonefish)

@@ -1,0 +1,11 @@
+--- a/core/websock.js
++++ b/core/websock.js
+@@ -260,7 +260,7 @@
+             if (this.readyState === 'connecting' ||
+                 this.readyState === 'open') {
+                 Log.Info("Closing WebSocket connection");
+-                this._websocket.close();
++                this._websocket.close(1000);
+             }
+ 
+             this._websocket.onmessage = () => {};

@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.10)
+project(robosub_stonefish)
+find_package(ament_cmake REQUIRED)
+find_package(Stonefish 1.6.0 EXACT REQUIRED)
+set(ROS_DEPENDENCIES rclcpp stonefish_ros2 image_transport std_msgs std_srvs geometry_msgs nav_msgs sensor_msgs tf2_ros)
+foreach(dependency IN LISTS ROS_DEPENDENCIES)
+  find_package(${dependency} REQUIRED)
+endforeach()
+add_executable(pool_simulator src/pool_simulator.cpp)
+# Stonefish ROS 2 1.6 installs its hand-written headers one level below its exported include path.
+find_path(STONEFISH_ROS2_HEADER_DIR stonefish_ros2/ROS2SimulationManager.h
+  HINTS ${stonefish_ros2_INCLUDE_DIRS} "${stonefish_ros2_DIR}/../../../include"
+  PATH_SUFFIXES include)
+if(NOT STONEFISH_ROS2_HEADER_DIR)
+  message(FATAL_ERROR "Stonefish ROS 2 simulator headers were not found")
+endif()
+target_include_directories(pool_simulator PRIVATE ${STONEFISH_ROS2_HEADER_DIR})
+target_compile_features(pool_simulator PRIVATE cxx_std_17)
+target_compile_options(pool_simulator PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(pool_simulator Stonefish::Stonefish ${stonefish_ros2_LIBRARIES})
+ament_target_dependencies(pool_simulator ${ROS_DEPENDENCIES})
+install(TARGETS pool_simulator DESTINATION lib/${PROJECT_NAME})
+ament_package()
