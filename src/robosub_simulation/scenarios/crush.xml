@@ -1,0 +1,209 @@
+<?xml version='1.0' encoding='utf-8'?>
+<scenario>
+  <!--Provisional six-axis Crush model. Metres; world NED, body forward/right/down.-->
+  <robot name="crush" fixed="false" self_collisions="false">
+    <base_link name="base_link" type="compound" physics="submerged">
+      <external_part name="cad_hull" type="model" physics="submerged" buoyant="false">
+        <physical>
+          <mesh filename="../meshes/crush_collision.obj" scale="1.0" />
+          <origin xyz="0 0 0" rpy="0 0 0" />
+        </physical>
+        <visual>
+          <mesh filename="../meshes/crush_visual.obj" scale="1.0" />
+          <origin xyz="0 0 0" rpy="0 0 0" />
+        </visual>
+        <material name="robot_aluminium" />
+        <look name="robot_hull" />
+        <mass value="14.456331907981701" />
+        <inertia xyz="0.0676483754134 0.112294589825 0.148722746298" />
+        <cg xyz="-0.0678438517472 0.0264337175238 -0.00780963552351" rpy="-1.5708322557 0.0443752207889 5.85309564832e-05" />
+        <hydrodynamics quadratic_drag="0.8 0.8 1" viscous_drag="0.005 0.005 0.005" />
+        <compound_transform xyz="0 0 0" rpy="0 0 0" />
+      </external_part>
+      <internal_part name="buoyancy_proxy" type="sphere" physics="submerged" buoyant="true">
+        <dimensions radius="0.15112042878650697" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <material name="robot_neutral" />
+        <look name="robot_hull" />
+        <mass value="1e-06" />
+        <compound_transform xyz="-0.0678438517472 0.0264337175238 -0.00780963552351" rpy="0 0 0" />
+      </internal_part>
+    </base_link>
+    <actuator name="front_right" type="thruster">
+      <link name="base_link" />
+      <origin xyz="0.152156148253 0.226433717524 -0.00780963552351" rpy="0 0 -0.785398163397" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="front_left" type="thruster">
+      <link name="base_link" />
+      <origin xyz="0.152156148253 -0.173566282476 -0.00780963552351" rpy="0 0 0.785398163397" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="rear_right" type="thruster">
+      <link name="base_link" />
+      <origin xyz="-0.287843851747 0.226433717524 -0.00780963552351" rpy="0 0 0.785398163397" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="rear_left" type="thruster">
+      <link name="base_link" />
+      <origin xyz="-0.287843851747 -0.173566282476 -0.00780963552351" rpy="0 0 -0.785398163397" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="vertical_front_right" type="thruster">
+      <link name="base_link" />
+      <origin xyz="0.152156148253 0.226433717524 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="vertical_front_left" type="thruster">
+      <link name="base_link" />
+      <origin xyz="0.152156148253 -0.173566282476 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="vertical_rear_right" type="thruster">
+      <link name="base_link" />
+      <origin xyz="-0.287843851747 0.226433717524 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <actuator name="vertical_rear_left" type="thruster">
+      <link name="base_link" />
+      <origin xyz="-0.287843851747 -0.173566282476 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <watchdog timeout="0.4" />
+      <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
+      <propeller diameter="0.07" right="true">
+        <mesh filename="../meshes/propeller.obj" scale="1.0" />
+        <material name="robot_aluminium" />
+        <look name="robot_propeller" />
+      </propeller>
+      <rotor_dynamics type="first_order">
+        <time_constant value="0.08" />
+      </rotor_dynamics>
+      <thrust_model type="quadratic">
+        <thrust_coeff value="0.0008888888888888889" />
+      </thrust_model>
+    </actuator>
+    <sensor name="ground_truth" type="odometry" rate="30">
+      <link name="base_link" />
+      <origin xyz="-0.0678438517472 0.0264337175238 -0.00780963552351" rpy="0 0 0" />
+      <ros_publisher topic="/simulation/crush/ground_truth" />
+      <ros_service set_enabled="/simulation/crush/ground_truth/set_enabled" />
+    </sensor>
+    <sensor name="imu" type="imu" rate="50">
+      <link name="base_link" />
+      <origin xyz="-0.0678438517472 0.0264337175238 -0.00780963552351" rpy="0 0 0" />
+      <ros_publisher topic="/simulation/crush/imu" />
+      <ros_service set_enabled="/simulation/crush/imu/set_enabled" />
+      <noise angle="0.001" angular_velocity="0.001" linear_acceleration="0.02" />
+    </sensor>
+    <sensor name="pressure" type="pressure" rate="20">
+      <link name="base_link" />
+      <origin xyz="-0.0678438517472 0.0264337175238 -0.00780963552351" rpy="0 0 0" />
+      <ros_publisher topic="/simulation/crush/pressure" />
+      <ros_service set_enabled="/simulation/crush/pressure/set_enabled" />
+      <noise pressure="5.0" />
+    </sensor>
+    <sensor name="dvl" type="dvl" rate="20">
+      <link name="base_link" />
+      <origin xyz="-0.0678438517472 0.0264337175238 0.152190364476" rpy="3.14159265359 0 0" />
+      <ros_publisher topic="/simulation/crush/dvl" altitude_topic="/simulation/crush/dvl/altitude" />
+      <ros_service set_enabled="/simulation/crush/dvl/set_enabled" />
+      <specs beam_angle="30" />
+      <range velocity="3 3 3" altitude_min="0.1" altitude_max="10" />
+      <noise velocity="0.002" altitude="0.005" />
+    </sensor>
+    <sensor name="camera/front" type="camera" rate="5">
+      <link name="base_link" />
+      <origin xyz="0.292156148253 0.0264337175238 -0.00780963552351" rpy="1.57079632679 0 1.57079632679" />
+      <ros_publisher topic="/simulation/crush/camera/front" />
+      <ros_service set_enabled="/simulation/crush/camera/front/set_enabled" />
+      <specs resolution_x="320" resolution_y="240" horizontal_fov="80" />
+    </sensor>
+    <ros_subscriber thrusters="/simulation/crush/thruster_setpoints" />
+    <ros_publisher thrusters="/simulation/crush/thruster_state" />
+    <ros_base_link_transform publish="true" />
+    <world_transform xyz="0 0 1" rpy="0 0 0" />
+  </robot>
+</scenario>

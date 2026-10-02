@@ -19,4 +19,4 @@ services:
       VIEW_WIDTH: ${VIEW_WIDTH:-1280}
       VIEW_HEIGHT: ${VIEW_HEIGHT:-720}
     volumes:
-      - ./src/robosub_simulation/config/pool.yaml:/config/pool.yaml:ro
+      - ./src/robosub_simulation/config:/config:ro

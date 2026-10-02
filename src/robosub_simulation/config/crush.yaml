@@ -1,0 +1,26 @@
+# Provisional eight-thruster layout for six-axis simulation, not the hardware allocation.
+model: crush_model.yaml
+water_density: 1000.0
+quadratic_drag: [0.8, 0.8, 1.0]
+viscous_drag: [0.005, 0.005, 0.005]
+thruster:
+  max_force: 20.0
+  max_omega: 150.0
+  time_constant: 0.08
+  watchdog: 0.4
+thrusters:
+  - {name: front_right, offset: [0.22, 0.20, 0.0], rpy: [0.0, 0.0, -0.7853981633974483]}
+  - {name: front_left, offset: [0.22, -0.20, 0.0], rpy: [0.0, 0.0, 0.7853981633974483]}
+  - {name: rear_right, offset: [-0.22, 0.20, 0.0], rpy: [0.0, 0.0, 0.7853981633974483]}
+  - {name: rear_left, offset: [-0.22, -0.20, 0.0], rpy: [0.0, 0.0, -0.7853981633974483]}
+  - {name: vertical_front_right, offset: [0.22, 0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: vertical_front_left, offset: [0.22, -0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: vertical_rear_right, offset: [-0.22, 0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: vertical_rear_left, offset: [-0.22, -0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
+teleop:
+  linear_speed: 0.45
+  angular_speed: 0.5
+  gains: [20.0, 20.0, 25.0, 0.5, 0.8, 0.6]
+  wrench_limits: [12.0, 12.0, 15.0, 0.5, 0.6, 0.6]
+  command_timeout: 0.35
+  odometry_timeout: 0.5

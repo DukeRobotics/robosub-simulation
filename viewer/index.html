@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pool · Duke Robotics</title>
+    <title>Crush simulation · Duke Robotics</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="/viewer.css">
     <script type="module" src="/viewer.js"></script>
@@ -11,22 +11,25 @@
   <body>
     <a class="skip" href="#screen">Skip to simulation</a>
     <header>
-      <div class="identity"><span class="mark" aria-hidden="true">DR</span><div><span class="eyebrow">DUKE ROBOTICS</span><h1>Pool simulation</h1></div></div>
+      <div class="identity"><span class="mark" aria-hidden="true">DR</span><div><span class="eyebrow">DUKE ROBOTICS</span><h1>Crush simulation</h1></div></div>
       <div id="connection" role="status" aria-live="polite" data-state="connecting">Connecting</div>
       <nav aria-label="Simulation viewer">
+        <button id="follow" disabled>Follow robot <kbd>F</kbd></button>
         <button id="surface" disabled>Surface view <kbd>R</kbd></button>
         <button id="underwater" disabled>Underwater <kbd>U</kbd></button>
         <button id="reconnect">Reconnect</button>
         <button id="fullscreen">Fullscreen <span aria-hidden="true">⛶</span></button>
+        <button id="stop" class="stop" disabled>Stop <kbd>Space</kbd></button>
       </nav>
     </header>
     <main id="stage" aria-label="Interactive Stonefish simulation">
-      <div id="screen" tabindex="0" aria-label="Pool viewport. Right drag to orbit, middle drag to pan, scroll to zoom."></div>
+      <div id="screen" tabindex="0" aria-label="Robot viewport. WASD translates, Q and E rise and dive, arrow keys yaw and pitch, Z and X roll, Space stops. Right drag orbits the camera, middle drag pans, scroll zooms."></div>
       <div id="notice">Starting the pool viewer…</div>
+      <div id="drive-state" role="status" aria-live="polite">Click the viewport to drive</div>
     </main>
     <footer>
-      <span class="scene"><span aria-hidden="true">◈</span> POOL ENVIRONMENT <span class="separator">/</span> NED · METRES</span>
-      <span class="help">Right drag <b>orbit</b><i>·</i> Middle drag <b>pan</b><i>·</i> Scroll <b>zoom</b><i>·</i> <kbd>H</kbd> inspector</span>
+      <span class="scene"><span aria-hidden="true">◈</span> CRUSH <span class="separator">/</span> POOL · NED</span>
+      <span class="help"><kbd>WASD</kbd> translation<i>·</i><kbd>Q / E</kbd> rise / dive<i>·</i><kbd>← →</kbd> yaw<i>·</i><kbd>↑ ↓</kbd> pitch<i>·</i><kbd>Z / X</kbd> roll<i>·</i><kbd>Space</kbd> stop</span>
     </footer>
   </body>
 </html>

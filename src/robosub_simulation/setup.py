@@ -14,6 +14,8 @@ setup(
         ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
         ('share/' + package_name + '/config', glob('config/*.yaml')),
         ('share/' + package_name + '/scenarios', glob('scenarios/*.scn')),
+        ('share/' + package_name + '/scenarios', glob('scenarios/*.xml')),
+        ('share/' + package_name + '/meshes', glob('meshes/*.obj')),
     ],
     install_requires=['setuptools', 'PyYAML'],
     zip_safe=True,
@@ -21,5 +23,11 @@ setup(
     maintainer_email='hello@duke-robotics.com',
     description='Stonefish pool simulation for Duke RoboSub.',
     license='GPL-3.0-only',
-    entry_points={'console_scripts': ['generate_pool = robosub_simulation.pool:main']},
+    entry_points={
+        'console_scripts': [
+            'generate_pool = robosub_simulation.pool:main',
+            'generate_robot = robosub_simulation.robot:main',
+            'teleop_mixer = robosub_simulation.teleop:main',
+        ]
+    },
 )

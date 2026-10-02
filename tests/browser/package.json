@@ -1,0 +1,6 @@
+{
+  "name": "robosub-viewer-tests",
+  "private": true,
+  "scripts": { "test": "node robot_teleop.cjs" },
+  "devDependencies": { "playwright": "1.63.0" }
+}

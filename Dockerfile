@@ -30,6 +30,15 @@ RUN git init src/stonefish_ros2 \
 RUN . /opt/ros/jazzy/setup.sh \
     && MAKEFLAGS="-j${BUILD_JOBS}" colcon build --merge-install --packages-select stonefish_ros2 \
        --cmake-args -DBUILD_TESTING=OFF
+
+# Cache browser dependencies separately from changes to our ROS packages.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-numpy \
+    xvfb x11vnc novnc websockify openbox x11-utils xdotool mesa-utils curl \
+    && rm -rf /var/lib/apt/lists/*
+COPY patches/novnc-close-status.patch /tmp/novnc-close-status.patch
+RUN patch --batch -p1 -d /usr/share/novnc < /tmp/novnc-close-status.patch
+
 COPY src/robosub_stonefish/ src/robosub_stonefish/
 COPY src/robosub_simulation/ src/robosub_simulation/
 RUN . /opt/ros/jazzy/setup.sh \
@@ -38,15 +47,7 @@ RUN . /opt/ros/jazzy/setup.sh \
        --packages-select robosub_stonefish robosub_simulation \
        --cmake-args -DBUILD_TESTING=OFF
 
-# Runtime drivers for the graphical simulator, including software OpenGL.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-dri libglx-mesa0 libegl-mesa0 \
-    xvfb x11vnc novnc websockify openbox x11-utils xdotool mesa-utils curl \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY docker/entrypoint.sh /simulation_entrypoint.sh
-COPY patches/novnc-close-status.patch /tmp/novnc-close-status.patch
-RUN patch --batch -p1 -d /usr/share/novnc < /tmp/novnc-close-status.patch
 COPY docker/browser_viewer.py /opt/simulation/browser_viewer.py
 COPY docker/openbox.xml /opt/simulation/openbox.xml
 COPY viewer/ /opt/simulation/viewer/

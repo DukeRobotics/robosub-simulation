@@ -26,6 +26,7 @@ def main():
             'launch',
             'robosub_simulation',
             'pool.launch.py',
+            'spawn_robot:=false',
             f'headless:={"false" if options.graphical else "true"}',
             'pool_length:=50',
             'pool_width:=25',

@@ -82,6 +82,7 @@ def main():
             'launch',
             'robosub_simulation',
             'pool.launch.py',
+            'keyboard_pulse_mode:=true',
             f'window_res_x:={width}',
             f'window_res_y:={height}',
             f'rendering_quality:={os.environ.get("RENDER_QUALITY", "low")}',
@@ -90,6 +91,9 @@ def main():
         config = Path(os.environ.get('POOL_CONFIG', '/config/pool.yaml'))
         if config.exists():
             command.append(f'pool_config:={config}')
+        robot_config = Path(os.environ.get('ROBOT_CONFIG', '/config/crush.yaml'))
+        if robot_config.exists():
+            command.append(f'robot_config:={robot_config}')
         simulator = start(command)
         print('Pool viewer: http://localhost:8080', flush=True)
         while not stopping:

@@ -2,7 +2,7 @@
 
 Build and run Duke RoboSub environments with Stonefish 1.6 and ROS 2 Jazzy, matching the ROS distribution in [`robosub-ros2`](../robosub-ros2).
 
-The first stage is a configurable outdoor pool: calm freshwater, sunlight, a floor and four collision walls. The default interior is **25 m × 15 m × 3 m deep**. These are development dimensions; replace them with measurements for the pool you want to reproduce.
+The scene contains a configurable outdoor pool and a teleoperable Crush prototype built from the supplied CAD export. The default pool interior is **25 m × 15 m × 3 m deep**. These are development dimensions; replace them with measurements for the pool you want to reproduce.
 
 ## View the pool on Wayland, Windows or macOS
 
@@ -17,15 +17,59 @@ Open **[http://localhost:8080](http://localhost:8080)** in your browser. The vie
 
 The first build compiles Stonefish and its ROS interface. Use `docker compose up -d` to run in the background, `docker compose logs -f simulation` to inspect logs, and `docker compose down` to stop it. The viewer port binds to the local machine.
 
+### Drive the robot
+
+Click the viewport, then hold the keys below. Motion follows the robot's current body axes, so forward follows its heading. Release a key to request zero velocity on that axis. You can hold several keys together.
+
+| Keys | Motion |
+| --- | --- |
+| W / S | Forward / backward |
+| A / D | Strafe left / right |
+| Q / E | Rise / dive |
+| Left / right arrows | Yaw left / right |
+| Up / down arrows | Pitch nose up / down |
+| Z / X | Roll left / right |
+| Space or **Stop** | Request zero velocity on all six axes |
+
+The provisional controller uses 0.45 m/s translation and 0.5 rad/s rotation. It compares requested velocity with built-in ground truth and allocates a bounded wrench across eight built-in Stonefish thrusters. The robot moves through forces and torques; teleop does not overwrite its pose. The controller brakes motion after key release; Space does not teleport the vehicle or erase momentum.
+
+Browser focus loss clears input, and key pulses expire after 500 ms if the browser disconnects. The mixer cuts thruster setpoints after 350 ms without a valid command or 500 ms without ground truth. Each actuator also has Stonefish's 400 ms watchdog.
+
 ### Camera controls
 
-- **Surface view / R:** frame the whole pool from above. This is the initial view.
+- **Follow robot / F:** follow Crush at close range. This is the initial view.
+- **Surface view / R:** frame the whole pool from above.
 - **Underwater / U:** move the view into the water.
 - **Right mouse drag:** orbit. **Middle mouse drag:** pan. **Scroll:** zoom.
-- **W/A/S/D:** move the camera horizontally along its viewing axes. **Q/Z:** move up/down. Hold Shift for larger steps.
 - **H:** show or hide Stonefish's inspector. **Fullscreen:** enlarge the browser viewport. **Reconnect:** restore the stream after a connection interruption.
 
-Click inside the viewport before using keyboard controls. On a trackpad without a middle button, use W/A/S/D/Q/Z to move the camera. Camera changes affect the view; pool geometry and physics stay the same.
+Camera mouse controls remain separate from robot keyboard controls. Follow mode tracks position while you orbit and zoom; switch to Surface or Underwater for a camera fixed in the pool.
+
+### Robot XML and built-in sensors
+
+[`scenarios/crush.xml`](src/robosub_simulation/scenarios/crush.xml) defines the body, buoyancy proxy, thrusters and sensors. Launch generates this XML from [`config/crush.yaml`](src/robosub_simulation/config/crush.yaml) and the CAD-derived [`crush_model.yaml`](src/robosub_simulation/config/crush_model.yaml), includes it in the pool scene, and adjusts buoyancy to the configured water density. Edit the YAML to change the provisional layout or controller settings; regenerate the checked-in XML with:
+
+```bash
+PYTHONPATH=src/robosub_simulation python3 -m robosub_simulation.robot \
+  --config src/robosub_simulation/config/crush.yaml \
+  --output src/robosub_simulation/scenarios/crush.xml
+```
+
+The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight-thruster layout supports six independent axes; it differs from the six-thruster hardware layout in `robosub-ros2`.
+
+| Topic | Type / purpose |
+| --- | --- |
+| `/simulation/crush/cmd_vel` | `geometry_msgs/msg/Twist`, desired body velocity in forward/right/down axes |
+| `/simulation/crush/thruster_setpoints` | `std_msgs/msg/Float64MultiArray`, eight normalized rotor setpoints in XML order |
+| `/simulation/crush/thruster_state` | `stonefish_ros2/msg/ThrusterState`, actual rotor speeds and thrust |
+| `/simulation/crush/ground_truth` | `nav_msgs/msg/Odometry`, pose in NED; twist in body axes at the centre of mass |
+| `/simulation/crush/imu` | `sensor_msgs/msg/Imu` |
+| `/simulation/crush/pressure` | `sensor_msgs/msg/FluidPressure` |
+| `/simulation/crush/dvl` | `stonefish_ros2/msg/DVL` |
+| `/simulation/crush/dvl/altitude` | `sensor_msgs/msg/Range`, distance to the floor |
+| `/simulation/crush/camera/front/image_color` | `sensor_msgs/msg/Image`, built-in 320 × 240 camera at 5 Hz |
+
+These are raw simulator topics in Stonefish's frame conventions. Production topic names and frame conversions for `robosub-ros2` remain a later integration step. Headless launch omits the camera while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
 
 ### Display settings
 
@@ -92,7 +136,7 @@ docker run --rm -it --network host \
   ros2 launch robosub_simulation pool.launch.py headless:=true pool_config:=/config/pool.yaml
 ```
 
-Other launch arguments: `simulation_rate` (100 Hz), `render_rate` (20 Hz), `window_res_x` (1280), `window_res_y` (720), and `rendering_quality` (`low`, `medium`, `high`; default `low`). Run `ros2 launch robosub_simulation pool.launch.py --show-args` for the full list.
+Other launch arguments: `robot_config`, `spawn_robot`, `keyboard_teleop`, `simulation_rate` (100 Hz), `render_rate` (20 Hz), `window_res_x` (1280), `window_res_y` (720), and `rendering_quality` (`low`, `medium`, `high`; default `low`). Run `ros2 launch robosub_simulation pool.launch.py --show-args` for the full list.
 
 We use Stonefish's NED coordinates: +X north, +Y east, +Z down. The origin is the pool centre at the water surface. The inner faces of the walls sit at `x = ±length/2` and `y = ±width/2`; the floor surface sits at `z = depth`. Walls extend above the water by `freeboard`. Wall and floor thicknesses extend outside the usable volume.
 
@@ -155,19 +199,42 @@ build/pool_smoke/pool_smoke src/robosub_simulation/scenarios/pool.scn 25 15 3
 
 The smoke check casts rays against each wall and the floor, then advances 100 physics steps. ROS launch and service checks require a built `stonefish_ros2` package. The simulator node runs at `/simulation/stonefish_simulator`; inspect its services with `ros2 service list` in a terminal sharing its ROS domain.
 
-Run the ROS integration check in a separate domain. It checks service calls, dimension overrides, parser output, clean process exit and temporary scene cleanup:
+Run the ROS integration checks in separate domains. They check pool services and dimension overrides, neutral buoyancy, sensor output, all six motion axes, command and odometry timeouts, parser output and clean shutdown:
 
 ```bash
 docker run --rm -e ROS_DOMAIN_ID=88 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/pool_smoke.py
+docker run --rm -e ROS_DOMAIN_ID=89 -v "$PWD/tests:/checks:ro" \
+  robosub-simulation:pool python3 /checks/ros/robot_smoke.py
 ```
 
-All 18 configuration and geometry tests pass, covering both 25 × 15 × 3 m and 50 × 25 × 4 m scenes. The ROS service and shutdown check passes in the built image. Chromium browser checks verify real rendered frames, surface and underwater presets, mouse input, fullscreen, reconnect and a narrow-screen layout, without browser errors. Graphical validation uses Mesa software OpenGL on the same virtual desktop that the browser viewer streams. A hardware GPU can improve rendering speed, but the default viewer does not require one.
+The 40 Python tests cover pool geometry and configuration, robot XML, CAD inertia conversion, neutral displacement, thruster allocation and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors.
 
-## Robot and ROS integration stages
+With the browser viewer running, install the browser test dependencies and run the UI check:
+
+```bash
+npm --prefix tests/browser install
+npx --prefix tests/browser playwright install chromium --only-shell
+npm --prefix tests/browser test
+```
+
+For physical motion verification, start a ROS observer before the browser test, then validate its recording afterward:
+
+```bash
+docker compose cp tests/browser/observe.py simulation:/tmp/observe.py
+docker compose exec -d simulation bash /simulation_entrypoint.sh \
+  python3 /tmp/observe.py --duration 100
+npm --prefix tests/browser test
+docker compose cp simulation:/tmp/robot_browser_telemetry.jsonl /tmp/robot_browser_telemetry.jsonl
+python3 tests/browser/check_telemetry.py /tmp/robot_browser_telemetry.jsonl
+```
+
+The Chromium check covers all twelve motion keys, simultaneous keys, Stop, camera presets, fullscreen, reconnect, mobile layout and disconnect while driving. The telemetry check verifies signed motion on every axis, bounded thruster commands, stable dynamics and forward camera images. Graphical checks use the same Mesa software rendering streamed to the browser; they do not require a host GPU.
+
+## ROS integration stages
 
 1. **Pool environment (this stage):** launch the configurable environment and validate rendering and collision boundaries.
-2. **Vehicle:** use the URDF's mesh, mass and inertia to define the Stonefish body. Add collision geometry, displaced volume, centre of buoyancy, and thrusters with the team's positions and order. See [the integration notes](docs/robot-integration.md).
-3. **Sensors and ROS adapters:** simulate IMU, pressure, DVL and cameras, then translate Stonefish messages and coordinates to the interfaces in `robosub-ros2`. Add a simulation launch for controls, sensor fusion and task planning.
+2. **Vehicle prototype (implemented):** CAD-based body, provisional buoyancy and drag, eight built-in thrusters, six-axis keyboard control, and built-in sensors. Replace the provisional physical parameters and actuator layout with measurements before evaluating hardware behavior. See [the integration notes](docs/robot-integration.md).
+3. **ROS adapters:** translate Stonefish messages and coordinates to the interfaces in `robosub-ros2`. Add a simulation launch for production controls, sensor fusion and task planning.
 
-The pool-only launch starts the environment. Vehicle dynamics, sensor topics and control adapters belong to stages 2 and 3.
+The default launch includes the vehicle prototype. Production control adapters and calibrated vehicle dynamics remain future work.

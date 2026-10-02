@@ -7,4 +7,5 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .env
+node_modules/
 src/stonefish_ros2/
