@@ -57,8 +57,7 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
     for definition in config['thrusters']:
         thruster = ET.SubElement(robot, 'actuator', name=definition['name'], type='thruster')
         ET.SubElement(thruster, 'link', name='base_link')
-        position = [a + b for a, b in zip(model['center_of_mass'], definition['offset'], strict=True)]
-        ET.SubElement(thruster, 'origin', xyz=_vector(position), rpy=_vector(definition['rpy']))
+        ET.SubElement(thruster, 'origin', xyz=_vector(definition['position']), rpy=_vector(definition['rpy']))
         ET.SubElement(thruster, 'watchdog', timeout=str(specifications['watchdog']))
         ET.SubElement(
             thruster,

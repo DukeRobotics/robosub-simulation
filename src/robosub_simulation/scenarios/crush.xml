@@ -31,7 +31,7 @@
     </base_link>
     <actuator name="front_right" type="thruster">
       <link name="base_link" />
-      <origin xyz="0.152156148253 0.226433717524 -0.00780963552351" rpy="0 0 -0.785398163397" />
+      <origin xyz="0.18006716 0.23174634 -0.02135" rpy="0 0 -0.785398163397" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -48,7 +48,7 @@
     </actuator>
     <actuator name="front_left" type="thruster">
       <link name="base_link" />
-      <origin xyz="0.152156148253 -0.173566282476 -0.00780963552351" rpy="0 0 0.785398163397" />
+      <origin xyz="0.17996127 -0.23164045 -0.02135" rpy="0 0 0.785398163397" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -65,7 +65,7 @@
     </actuator>
     <actuator name="rear_right" type="thruster">
       <link name="base_link" />
-      <origin xyz="-0.287843851747 0.226433717524 -0.00780963552351" rpy="0 0 0.785398163397" />
+      <origin xyz="-0.30466545 0.25298627 -0.02135" rpy="0 0 0.785398163397" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -82,7 +82,7 @@
     </actuator>
     <actuator name="rear_left" type="thruster">
       <link name="base_link" />
-      <origin xyz="-0.287843851747 -0.173566282476 -0.00780963552351" rpy="0 0 -0.785398163397" />
+      <origin xyz="-0.30466545 -0.25298627 -0.02135" rpy="0 0 -0.785398163397" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -99,7 +99,7 @@
     </actuator>
     <actuator name="vertical_front_right" type="thruster">
       <link name="base_link" />
-      <origin xyz="0.152156148253 0.226433717524 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <origin xyz="0.012375 0.2017 -0.00625622" rpy="0 -1.57079632679 0" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -116,7 +116,7 @@
     </actuator>
     <actuator name="vertical_front_left" type="thruster">
       <link name="base_link" />
-      <origin xyz="0.152156148253 -0.173566282476 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <origin xyz="0.012375 -0.2017 -0.00625622" rpy="0 -1.57079632679 0" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -133,7 +133,7 @@
     </actuator>
     <actuator name="vertical_rear_right" type="thruster">
       <link name="base_link" />
-      <origin xyz="-0.287843851747 0.226433717524 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <origin xyz="-0.158425 0.2017 -0.00625622" rpy="0 -1.57079632679 0" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">
@@ -150,7 +150,7 @@
     </actuator>
     <actuator name="vertical_rear_left" type="thruster">
       <link name="base_link" />
-      <origin xyz="-0.287843851747 -0.173566282476 -0.00780963552351" rpy="0 -1.57079632679 0" />
+      <origin xyz="-0.158425 -0.2017 -0.00625622" rpy="0 -1.57079632679 0" />
       <watchdog timeout="0.4" />
       <specs max_setpoint="150.0" inverted_setpoint="false" normalized_setpoint="true" />
       <propeller diameter="0.07" right="true">

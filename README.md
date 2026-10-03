@@ -55,7 +55,7 @@ PYTHONPATH=src/robosub_simulation python3 -m robosub_simulation.robot \
   --output src/robosub_simulation/scenarios/crush.xml
 ```
 
-The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight-thruster layout supports six independent axes; it differs from the six-thruster hardware layout in `robosub-ros2`.
+The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight actuator positions follow the CAD rotor geometry, with four horizontal corner thrusters and four vertical thrusters closer to the middle. Their `position` values use the CAD link frame in forward/right/down coordinates; the allocator subtracts the centre of mass to compute torque arms. This layout supports six independent axes and differs from the six-thruster hardware configuration in `robosub-ros2`.
 
 | Topic | Type / purpose |
 | --- | --- |
@@ -208,7 +208,7 @@ docker run --rm -e ROS_DOMAIN_ID=89 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/robot_smoke.py
 ```
 
-The 40 Python tests cover pool geometry and configuration, robot XML, CAD inertia conversion, neutral displacement, thruster allocation and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors.
+The 42 Python tests cover pool geometry and configuration, robot XML, CAD inertia conversion, neutral displacement, thruster allocation, actuator frame invariance and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors.
 
 With the browser viewer running, install the browser test dependencies and run the UI check:
 

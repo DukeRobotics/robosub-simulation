@@ -1,4 +1,7 @@
-# Provisional eight-thruster layout for six-axis simulation, not the hardware allocation.
+# Eight actuator poses fitted to the supplied CAD rotor geometry.
+# position: metres in the CAD base_link frame, converted to forward/right/down.
+# These are absolute link positions, not offsets from the centre of mass.
+# The six-thruster hardware configuration in robosub-ros2 uses a different layout/frame.
 model: crush_model.yaml
 water_density: 1000.0
 quadratic_drag: [0.8, 0.8, 1.0]
@@ -9,14 +12,14 @@ thruster:
   time_constant: 0.08
   watchdog: 0.4
 thrusters:
-  - {name: front_right, offset: [0.22, 0.20, 0.0], rpy: [0.0, 0.0, -0.7853981633974483]}
-  - {name: front_left, offset: [0.22, -0.20, 0.0], rpy: [0.0, 0.0, 0.7853981633974483]}
-  - {name: rear_right, offset: [-0.22, 0.20, 0.0], rpy: [0.0, 0.0, 0.7853981633974483]}
-  - {name: rear_left, offset: [-0.22, -0.20, 0.0], rpy: [0.0, 0.0, -0.7853981633974483]}
-  - {name: vertical_front_right, offset: [0.22, 0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
-  - {name: vertical_front_left, offset: [0.22, -0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
-  - {name: vertical_rear_right, offset: [-0.22, 0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
-  - {name: vertical_rear_left, offset: [-0.22, -0.20, 0.0], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: front_right, position: [0.18006716, 0.23174634, -0.02135], rpy: [0.0, 0.0, -0.7853981633974483]}
+  - {name: front_left, position: [0.17996127, -0.23164045, -0.02135], rpy: [0.0, 0.0, 0.7853981633974483]}
+  - {name: rear_right, position: [-0.30466545, 0.25298627, -0.02135], rpy: [0.0, 0.0, 0.7853981633974483]}
+  - {name: rear_left, position: [-0.30466545, -0.25298627, -0.02135], rpy: [0.0, 0.0, -0.7853981633974483]}
+  - {name: vertical_front_right, position: [0.012375, 0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: vertical_front_left, position: [0.012375, -0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: vertical_rear_right, position: [-0.158425, 0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: vertical_rear_left, position: [-0.158425, -0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
 teleop:
   linear_speed: 0.45
   angular_speed: 0.5

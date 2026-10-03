@@ -1,5 +1,6 @@
 import math
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -91,11 +92,37 @@ def test_thruster_xml_and_allocator_share_order_geometry_and_force_model():
         assert actuator.get('type') == 'thruster'
         np.testing.assert_allclose(
             np.fromstring(actuator.find('origin').get('xyz'), sep=' '),
-            np.array(CONFIG['model_data']['center_of_mass']) + definition['offset'],
+            definition['position'],
         )
         coefficient = float(actuator.find('thrust_model/thrust_coeff').get('value'))
         assert coefficient * CONFIG['thruster']['max_omega'] ** 2 == pytest.approx(CONFIG['thruster']['max_force'])
         assert float(actuator.find('watchdog').get('timeout')) > 0
+
+
+def test_changing_center_of_mass_does_not_move_cad_actuators():
+    changed = deepcopy(CONFIG)
+    delta = np.array([0.03, -0.02, 0.01])
+    changed['model_data']['center_of_mass'] = (np.array(changed['model_data']['center_of_mass']) + delta).tolist()
+    original_origins = [
+        item.find('origin').get('xyz') for item in build_robot(CONFIG).getroot().findall('robot/actuator')
+    ]
+    changed_origins = [
+        item.find('origin').get('xyz') for item in build_robot(changed).getroot().findall('robot/actuator')
+    ]
+    assert changed_origins == original_origins
+    original = ThrusterAllocator(CONFIG).matrix
+    updated = ThrusterAllocator(changed).matrix
+    np.testing.assert_allclose(updated[:3], original[:3])
+    np.testing.assert_allclose(updated[3:], original[3:] - np.cross(delta, original[:3].T).T, atol=1e-12)
+
+
+def test_changing_link_origin_preserves_allocation():
+    changed = deepcopy(CONFIG)
+    delta = np.array([0.2, 0.1, -0.05])
+    changed['model_data']['center_of_mass'] = (np.array(changed['model_data']['center_of_mass']) + delta).tolist()
+    for thruster in changed['thrusters']:
+        thruster['position'] = (np.array(thruster['position']) + delta).tolist()
+    np.testing.assert_allclose(ThrusterAllocator(changed).matrix, ThrusterAllocator(CONFIG).matrix, atol=1e-12)
 
 
 def test_headless_robot_keeps_scalar_sensors_and_omits_the_camera():

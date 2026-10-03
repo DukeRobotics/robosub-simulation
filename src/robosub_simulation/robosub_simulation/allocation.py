@@ -9,10 +9,13 @@ class ThrusterAllocator:
     def __init__(self, config):
         columns = []
         names = []
+        center_of_mass = np.asarray(config['model_data']['center_of_mass'], dtype=float)
         for thruster in config['thrusters']:
             _, pitch, yaw = thruster['rpy']
             direction = np.array([math.cos(pitch) * math.cos(yaw), math.cos(pitch) * math.sin(yaw), -math.sin(pitch)])
-            columns.append(np.concatenate((direction, np.cross(thruster['offset'], direction))))
+            # Actuator poses use the CAD link frame; torques act about the centre of mass.
+            lever = np.asarray(thruster['position'], dtype=float) - center_of_mass
+            columns.append(np.concatenate((direction, np.cross(lever, direction))))
             names.append(thruster['name'])
         self.matrix = np.column_stack(columns)
         if not np.all(np.isfinite(self.matrix)) or np.linalg.matrix_rank(self.matrix) != 6:
