@@ -1,15 +1,19 @@
 """Publish Stonefish measurements on Crush's real driver topics for the robosub-ros2 stack."""
 
+import math
+
 import rclpy
+from custom_msgs.msg import ThrusterAllocs
 from custom_msgs.srv import SonarSweepRequest
 from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, FluidPressure, Image, Imu
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Float64MultiArray
 from stonefish_ros2.msg import DVL
 
+from robosub_simulation.allocation import rotor_setpoints
 from robosub_simulation.robot import load_robot_config
 from robosub_simulation.sensors import COVARIANCE, Depth, Gyro, jpeg, quaternion, sim_rpy, vectornav_orientation
 
@@ -45,6 +49,12 @@ class SimAdapter(Node):
         self.create_subscription(DVL, RAW + 'dvl', self.dvl_received, 10)
         self.create_timer(1.0, lambda: self.voltage.publish(Float64(data=VOLTAGE)))
         self.create_service(SonarSweepRequest, '/sonar/request', self.sonar_requested)
+        # Stands in for offboard_comms thrusters.py and the ESCs. Run with enable_teleop:=false so
+        # robosub-ros2 controls is the only source of setpoints; thruster watchdogs stop the rotors
+        # when controls is disabled and stops publishing.
+        self.thruster_count = len(config['thrusters'])
+        self.setpoints = self.create_publisher(Float64MultiArray, RAW + 'thruster_setpoints', 1)
+        self.create_subscription(ThrusterAllocs, '/controls/thruster_allocs', self.allocations_received, 1)
         # Cameras exist only when Stonefish renders (not headless).
         for name in config['cameras']:
             publisher = self.create_publisher(CompressedImage, f'/camera/usb/{name}/compressed', 1)
@@ -54,6 +64,13 @@ class SimAdapter(Node):
                 lambda message, name=name, publisher=publisher: self.camera_received(message, name, publisher),
                 1,
             )
+
+    def allocations_received(self, message):
+        # Sim thrusters share the controls config order, so no reordering is needed.
+        if len(message.allocs) != self.thruster_count or not all(map(math.isfinite, message.allocs)):
+            self.get_logger().warning(f'Ignoring thruster allocations: {list(message.allocs)}', throttle_duration_sec=5)
+            return
+        self.setpoints.publish(Float64MultiArray(data=rotor_setpoints(message.allocs).tolist()))
 
     def sonar_requested(self, request, response):
         # ponytail: sees nothing yet; a Stonefish MSIS sweep through sonar.py's pipeline replaces this.

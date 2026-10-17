@@ -82,7 +82,10 @@ def main():
             )
             try:
                 deadline = time.monotonic() + 30
-                while (len(messages) < 6 or len(real) < 5) and time.monotonic() < deadline:
+                # Wait for the mixer to discover cmd_vel too, or the first motion check loses its commands.
+                while (
+                    len(messages) < 6 or len(real) < 5 or publisher.get_subscription_count() == 0
+                ) and time.monotonic() < deadline:
                     rclpy.spin_once(node, timeout_sec=0.1)
                     assert process.poll() is None, log.read_text()
                 assert len(messages) == 6, f'Missing sensors: {messages.keys()}\n{log.read_text()}'

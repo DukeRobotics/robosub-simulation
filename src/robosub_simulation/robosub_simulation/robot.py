@@ -15,6 +15,10 @@ def load_robot_config(path):
     path = Path(path)
     config = yaml.safe_load(path.read_text())
     config['model_data'] = yaml.safe_load((path.parent / config['model']).read_text())
+    # robosub-ros2 thruster poses (corner_link, degrees) in the Stonefish link frame (forward/right/down).
+    for thruster in config['thrusters']:
+        thruster['position'] = sim_position(config, thruster['pos'])
+        thruster['orientation'] = sim_rpy([math.radians(angle) for angle in thruster['rpy']])
     return config
 
 
@@ -58,7 +62,7 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
     for definition in config['thrusters']:
         thruster = ET.SubElement(robot, 'actuator', name=definition['name'], type='thruster')
         ET.SubElement(thruster, 'link', name='base_link')
-        ET.SubElement(thruster, 'origin', xyz=_vector(definition['position']), rpy=_vector(definition['rpy']))
+        ET.SubElement(thruster, 'origin', xyz=_vector(definition['position']), rpy=_vector(definition['orientation']))
         ET.SubElement(thruster, 'watchdog', timeout=str(specifications['watchdog']))
         ET.SubElement(
             thruster,

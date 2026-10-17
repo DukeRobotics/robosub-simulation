@@ -5,13 +5,19 @@ import math
 import numpy as np
 
 
+def rotor_setpoints(allocations):
+    """Normalized force (robosub-ros2 thruster_allocs) to normalized rotor speed; thrust grows with speed squared."""
+    allocations = np.clip(np.asarray(allocations, dtype=float), -1.0, 1.0)
+    return np.sign(allocations) * np.sqrt(np.abs(allocations))
+
+
 class ThrusterAllocator:
     def __init__(self, config):
         columns = []
         names = []
         center_of_mass = np.asarray(config['model_data']['center_of_mass'], dtype=float)
         for thruster in config['thrusters']:
-            _, pitch, yaw = thruster['rpy']
+            _, pitch, yaw = thruster['orientation']
             direction = np.array([math.cos(pitch) * math.cos(yaw), math.cos(pitch) * math.sin(yaw), -math.sin(pitch)])
             # Actuator poses use the CAD link frame; torques act about the centre of mass.
             lever = np.asarray(thruster['position'], dtype=float) - center_of_mass
@@ -34,7 +40,7 @@ class ThrusterAllocator:
         forces = self.inverse @ wrench
         # Scale the entire vector at saturation to preserve the requested wrench direction.
         forces /= max(1.0, float(np.max(np.abs(forces))) / self.max_force)
-        return np.sign(forces) * np.sqrt(np.abs(forces) / self.max_force)
+        return rotor_setpoints(forces / self.max_force)
 
 
 class VelocityController:

@@ -55,12 +55,12 @@ PYTHONPATH=src/robosub_simulation python3 -m robosub_simulation.robot \
   --output src/robosub_simulation/scenarios/crush.xml
 ```
 
-The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight actuator positions follow the CAD rotor geometry, with four horizontal corner thrusters and four vertical thrusters closer to the middle. Their `position` values use the CAD link frame in forward/right/down coordinates; the allocator subtracts the centre of mass to compute torque arms. This layout supports six independent axes and differs from the six-thruster hardware configuration in `robosub-ros2`.
+The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight thrusters are Crush's real layout from `robosub-ros2` `robosub-2026` (`controls/config/crush.yaml`): four horizontal corner thrusters at ±135° and four vertical thrusters, in `/controls/thruster_allocs` order. Those `corner_link` poses land within about 1 cm of the CAD rotors. A positive allocation pushes along the thruster's rotated +x axis; spin direction is ESC wiring and is not modelled. `max_force` (thrust at allocation 1) is an estimate.
 
 | Topic | Type / purpose |
 | --- | --- |
 | `/simulation/crush/cmd_vel` | `geometry_msgs/msg/Twist`, desired body velocity in forward/right/down axes |
-| `/simulation/crush/thruster_setpoints` | `std_msgs/msg/Float64MultiArray`, eight normalized rotor setpoints in XML order |
+| `/simulation/crush/thruster_setpoints` | `std_msgs/msg/Float64MultiArray`, eight normalized rotor setpoints in `robosub-ros2` order |
 | `/simulation/crush/thruster_state` | `stonefish_ros2/msg/ThrusterState`, actual rotor speeds and thrust |
 | `/simulation/crush/ground_truth` | `nav_msgs/msg/Odometry`, pose in NED; twist in body axes at the centre of mass |
 | `/simulation/crush/imu` | `sensor_msgs/msg/Imu`, VN100 mount; its orientation uses upstream's Y-X-Z Euler order, so use ground truth for attitude |
@@ -79,6 +79,7 @@ These are raw simulator topics in Stonefish's frame conventions. Sensors sit at 
 | `/sensors/dvl/odom` | `dvl_to_odom.py`: child frame `dvl`, forward/left/up velocity, dropped without bottom lock |
 | `/sensors/gyro/angular_velocity/twist`, `/sensors/gyro/angular_position/pose` | `gyro.py`: frame `gyro`, counter-clockwise rate and its integral from zero |
 | `/sensors/voltage` | constant 16 V for `thrusters.py` |
+| `/controls/thruster_allocs` (subscribed) | `thrusters.py` and the ESCs: eight normalized forces become rotor setpoints, `sign(f)·√|f|`; launch with `enable_teleop:=false` so only `robosub-ros2` controls commands the thrusters |
 | `/camera/usb/{front,bottom}/compressed` | `usb_camera`: JPEG `CompressedImage`, frames `camera_usb_front` and `camera_usb_bottom`; graphical launch only |
 | `/sonar/request` service | `sonar.py` request validation; reports no object until a simulated Ping360 sweep exists |
 
@@ -219,9 +220,11 @@ docker run --rm -e ROS_DOMAIN_ID=88 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/pool_smoke.py
 docker run --rm -e ROS_DOMAIN_ID=89 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/robot_smoke.py
+docker run --rm -e ROS_DOMAIN_ID=90 -v "$PWD/tests:/checks:ro" \
+  robosub-simulation:pool python3 /checks/ros/bridge_smoke.py
 ```
 
-The 49 Python tests cover pool geometry and configuration, robot XML, sensor and camera mounts and driver conversions, CAD inertia conversion, neutral displacement, thruster allocation, actuator frame invariance and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors.
+The 52 Python tests cover pool geometry and configuration, robot XML, sensor and camera mounts and driver conversions, CAD inertia conversion, neutral displacement, agreement with the `robosub-ros2` wrench matrix, thruster allocation, actuator frame invariance and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors; the bridge check drives the thrusters through `/controls/thruster_allocs`.
 
 With the browser viewer running, install the browser test dependencies and run the UI check:
 

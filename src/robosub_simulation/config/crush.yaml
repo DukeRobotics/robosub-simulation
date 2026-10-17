@@ -1,34 +1,35 @@
-# Eight actuator poses fitted to the supplied CAD rotor geometry.
-# position: metres in the CAD base_link frame, converted to forward/right/down.
-# These are absolute link positions, not offsets from the centre of mass.
-# The six-thruster hardware configuration in robosub-ros2 uses a different layout/frame.
+# Poses and frames below are copied from robosub-ros2 robosub-2026@68f6d1d (onboard/src):
+# controls/config/crush.yaml thrusters and static_transforms/config/crush.yaml.
 model: crush_model.yaml
 water_density: 1000.0
 quadratic_drag: [0.8, 0.8, 1.0]
 viscous_drag: [0.005, 0.005, 0.005]
 thruster:
-  max_force: 20.0
+  # Thrust at normalized allocation 1. ponytail: a symmetric T200 estimate at 16 V; the real PWM tables
+  # stop short of full throttle and reverse is weaker. Measure and tune.
+  max_force: 40.0
   max_omega: 150.0
   time_constant: 0.08
   watchdog: 0.4
+# T200s in /controls/thruster_allocs order. pos: corner_link metres; rpy: degrees, forward/left/up;
+# a positive allocation pushes along the rotated +x axis. Spin direction (cw) is ESC wiring, not modelled.
 thrusters:
-  - {name: front_right, position: [0.18006716, 0.23174634, -0.02135], rpy: [0.0, 0.0, -0.7853981633974483]}
-  - {name: front_left, position: [0.17996127, -0.23164045, -0.02135], rpy: [0.0, 0.0, 0.7853981633974483]}
-  - {name: rear_right, position: [-0.30466545, 0.25298627, -0.02135], rpy: [0.0, 0.0, 0.7853981633974483]}
-  - {name: rear_left, position: [-0.30466545, -0.25298627, -0.02135], rpy: [0.0, 0.0, -0.7853981633974483]}
-  - {name: vertical_front_right, position: [0.012375, 0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
-  - {name: vertical_front_left, position: [0.012375, -0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
-  - {name: vertical_rear_right, position: [-0.158425, 0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
-  - {name: vertical_rear_left, position: [-0.158425, -0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
+  - {name: front_right, pos: [0.001895, -0.38866, -0.003175], rpy: [0, 0, -135]}
+  - {name: middle_right_first, pos: [-0.15501, -0.34805, -0.003175], rpy: [0, 90, 0]}
+  - {name: middle_right_second, pos: [-0.32582, -0.34805, -0.003175], rpy: [0, 90, 0]}
+  - {name: back_right, pos: [-0.48273, -0.38866, -0.003175], rpy: [0, 0, 135]}
+  - {name: back_left, pos: [-0.48273, 0.09596, -0.003175], rpy: [0, 0, -135]}
+  - {name: middle_left_first, pos: [-0.15501, 0.05535, -0.003175], rpy: [0, 90, 0]}
+  - {name: middle_left_second, pos: [-0.32582, 0.05535, -0.003175], rpy: [0, 90, 0]}
+  - {name: front_left, pos: [0.001895, 0.09596, -0.003175], rpy: [0, 0, 135]}
 # robosub-ros2 base_link in the CAD link frame (forward/right/down). Estimated from the centroid of
 # the horizontal thrusters, which robosub-ros2 places symmetrically about base_link; confirm on the vehicle.
 base_link: [-0.06233, 0.0, -0.0066]
-# Sensor mounts copied from robosub-ros2 main@55b6d17 static_transforms/config/crush.yaml:
-# base_link -> corner_link, then corner_link -> sensor (metres and radians, forward/left/up).
+# Sensor mounts: base_link -> corner_link, then corner_link -> sensor (metres and radians, forward/left/up).
 # Rates (Hz) follow each real driver; the fiber-optic gyro runs at 1 kHz on hardware.
 corner_link: [0.24042, 0.14635, 0.017975]
 sensors:
-  imu: {position: [-0.238649, -0.179528, 0.040240], rpy: [0.0, 0.0, 3.141592653589793], rate: 20}
+  imu: {position: [-0.172365, -0.179528, 0.040240], rpy: [0.0, 0.0, 3.141592653589793], rate: 20}
   gyro: {position: [-0.317511, -0.2233, 0.048512], rpy: [0.0, 0.0, 0.0], rate: 100}
   pressure: {position: [-0.412040, -0.241661, 0.061675], rpy: [0.0, 0.0, 0.0], rate: 20}
   dvl: {position: [-0.240415, -0.14635, -0.200875], rpy: [0.0, 0.0, 0.0], rate: 10}

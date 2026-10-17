@@ -5,8 +5,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from robosub_simulation.allocation import ThrusterAllocator, VelocityController
+from robosub_simulation.allocation import ThrusterAllocator, VelocityController, rotor_setpoints
 from robosub_simulation.robot import build_robot, load_robot_config
+from robosub_simulation.sensors import FLU_TO_FRD, rotation
 
 PACKAGE = Path(__file__).resolve().parents[1]
 CONFIG = load_robot_config(PACKAGE / 'config/crush.yaml')
@@ -22,6 +23,38 @@ def test_all_axes_produce_the_requested_wrench_without_cross_axis_leakage(axis, 
     forces = setpoints * np.abs(setpoints) * allocator.max_force
     np.testing.assert_allclose(allocator.matrix @ forces, target, atol=1e-10)
     assert np.all(np.abs(setpoints) <= 1)
+
+
+def test_sim_thrusters_reproduce_the_robosub_ros2_wrench_matrix():
+    # robosub-ros2 compute_wrench_matrix.py: force along the rotated +x, torque about base_link, forward/left/up.
+    corner = np.asarray(CONFIG['corner_link'])
+    expected = np.column_stack(
+        [
+            np.concatenate((direction, np.cross(corner + thruster['pos'], direction)))
+            for thruster in CONFIG['thrusters']
+            for direction in [rotation(np.radians(thruster['rpy'])) @ [1, 0, 0]]
+        ]
+    )
+    # The sim allocator works in the forward/right/down link frame about the centre of mass.
+    shifted = deepcopy(CONFIG)
+    shifted['model_data']['center_of_mass'] = CONFIG['base_link']
+    actual = ThrusterAllocator(shifted).matrix
+    np.testing.assert_allclose(FLU_TO_FRD @ actual[:3], expected[:3], atol=1e-9)
+    np.testing.assert_allclose(FLU_TO_FRD @ actual[3:], expected[3:], atol=1e-9)
+
+
+def test_cad_rotors_agree_with_robosub_ros2_thruster_poses():
+    # Rotor centres measured on the CAD export (forward/right/down) before the robosub-ros2 layout existed.
+    cad = {'front_right': (0.18007, 0.23175), 'back_right': (-0.30467, 0.25299), 'middle_right_first': (0.012375, 0.2017)}
+    positions = {thruster['name']: thruster['position'] for thruster in CONFIG['thrusters']}
+    for name, (x, y) in cad.items():
+        assert np.hypot(positions[name][0] - x, positions[name][1] - y) < 0.015, name
+
+
+def test_rotor_setpoints_give_thrust_proportional_to_allocation():
+    allocations = np.array([-1.5, -0.25, 0.0, 0.36, 1.0])
+    setpoints = rotor_setpoints(allocations)
+    np.testing.assert_allclose(setpoints * np.abs(setpoints), [-1.0, -0.25, 0.0, 0.36, 1.0])
 
 
 def test_saturation_preserves_wrench_direction():
