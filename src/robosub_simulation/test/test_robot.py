@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from robosub_simulation.allocation import ThrusterAllocator, VelocityController, rotor_setpoints
-from robosub_simulation.robot import build_robot, load_robot_config
+from robosub_simulation.robot import build_robot, load_robot_config, read_robosub_ros2
 from robosub_simulation.sensors import FLU_TO_FRD, rotation
 
 PACKAGE = Path(__file__).resolve().parents[1]
@@ -27,11 +27,12 @@ def test_all_axes_produce_the_requested_wrench_without_cross_axis_leakage(axis, 
 
 def test_sim_thrusters_reproduce_the_robosub_ros2_wrench_matrix():
     # robosub-ros2 compute_wrench_matrix.py: force along the rotated +x, torque about base_link, forward/left/up.
-    corner = np.asarray(CONFIG['corner_link'])
+    transforms, thrusters, _ = read_robosub_ros2(CONFIG['robosub_ros2'], CONFIG['robot'])
+    corner = np.array([transforms['corner_link'][axis] for axis in 'xyz'])
     expected = np.column_stack(
         [
             np.concatenate((direction, np.cross(corner + thruster['pos'], direction)))
-            for thruster in CONFIG['thrusters']
+            for thruster in thrusters
             for direction in [rotation(np.radians(thruster['rpy'])) @ [1, 0, 0]]
         ]
     )

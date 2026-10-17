@@ -49,18 +49,17 @@ def euler(matrix):
 
 
 def sim_position(config, position):
-    """Stonefish link-frame position of a point given relative to robosub-ros2 corner_link."""
-    base = np.asarray(config['corner_link'], dtype=float) + np.asarray(position, dtype=float)
-    return (np.asarray(config['base_link'], dtype=float) + FLU_TO_FRD @ base).tolist()
+    """Stonefish link-frame position of a point given in robosub-ros2 base_link."""
+    return (np.asarray(config['base_link'], dtype=float) + FLU_TO_FRD @ np.asarray(position, dtype=float)).tolist()
 
 
-def sim_rpy(rpy, reports_frame_axes=False):
-    """Stonefish orientation, in the FRD body, of a frame given in robosub-ros2 base_link axes.
+def sim_rpy(matrix, reports_frame_axes=False):
+    """Stonefish orientation, in the FRD body, of a frame rotated by `matrix` in robosub-ros2 base_link.
 
     Scalar sensors report in forward/right/down axes of their mount. A Stonefish DVL instead
     points its beams along -z, so its frame is the robosub-ros2 frame itself.
     """
-    matrix = FLU_TO_FRD @ rotation(rpy) @ FLU_TO_FRD
+    matrix = FLU_TO_FRD @ matrix @ FLU_TO_FRD
     return euler(matrix @ FLU_TO_FRD if reports_frame_axes else matrix)
 
 
@@ -69,9 +68,9 @@ def sim_rpy(rpy, reports_frame_axes=False):
 OPTICAL = rotation((-math.pi / 2, 0.0, -math.pi / 2))
 
 
-def sim_camera_rpy(rpy):
+def sim_camera_rpy(matrix):
     """Stonefish orientation, in the FRD body, of a camera whose robosub-ros2 frame looks along +x."""
-    return euler(FLU_TO_FRD @ rotation(rpy) @ OPTICAL)
+    return euler(FLU_TO_FRD @ matrix @ OPTICAL)
 
 
 def quaternion(rpy):

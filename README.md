@@ -55,7 +55,7 @@ PYTHONPATH=src/robosub_simulation python3 -m robosub_simulation.robot \
   --output src/robosub_simulation/scenarios/crush.xml
 ```
 
-The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight thrusters are Crush's real layout from `robosub-ros2` `robosub-2026` (`controls/config/crush.yaml`): four horizontal corner thrusters at ±135° and four vertical thrusters, in `/controls/thruster_allocs` order. Those `corner_link` poses land within about 1 cm of the CAD rotors. A positive allocation pushes along the thruster's rotated +x axis; spin direction is ESC wiring and is not modelled. `max_force` (thrust at allocation 1) is an estimate.
+The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). The simulation uses a simplified visual mesh, a closed collision box, the exported 14.456 kg mass and full inertia tensor, and an internal neutral-buoyancy proxy. These buoyancy and drag settings need physical calibration. The eight thrusters are read from `robosub-ros2` `controls/config/crush.yaml`: four horizontal corner thrusters at ±135° and four vertical thrusters, in `/controls/thruster_allocs` order. Those `corner_link` poses land within about 1 cm of the CAD rotors. A positive allocation pushes along the thruster's rotated +x axis; spin direction is ESC wiring and is not modelled. `max_force` (thrust at allocation 1) is an estimate.
 
 | Topic | Type / purpose |
 | --- | --- |
@@ -70,7 +70,13 @@ The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). 
 | `/simulation/crush/dvl/altitude` | `sensor_msgs/msg/Range`, distance to the floor |
 | `/simulation/crush/camera/{front,bottom}/image_color` | `sensor_msgs/msg/Image`, 640 × 480 USB camera mounts at 5 Hz |
 
-These are raw simulator topics in Stonefish's frame conventions. Sensors sit at Crush's `robosub-ros2` static transforms in [`crush.yaml`](src/robosub_simulation/config/crush.yaml), and the `sim_adapter` node republishes them exactly as the real drivers do (robosub-ros2 main@55b6d17, quirks included):
+These are raw simulator topics in Stonefish's frame conventions. Sensor, camera and thruster poses, camera resolution, field of view, frames and topics come from `robosub-ros2` itself: `onboard/src/{static_transforms,controls,cv}/config/crush.yaml`, read at launch. The image contains those files at the pinned `robosub-2026` commit (`ROBOSUB_ROS2_REF` in the Dockerfile). To follow a local checkout instead, mount it:
+
+```bash
+ROBOSUB_ROS2=../robosub-ros2 docker compose -f compose.yaml -f compose.robosub-ros2.yaml up
+```
+
+Restart the service after changing those configs. [`crush.yaml`](src/robosub_simulation/config/crush.yaml) keeps only simulator physics, sensor rates and the CAD alignment. The `sim_adapter` node republishes each sensor exactly as the real driver does (quirks included):
 
 | Topic | Reproduces |
 | --- | --- |
@@ -83,7 +89,7 @@ These are raw simulator topics in Stonefish's frame conventions. Sensors sit at 
 | `/camera/usb/{front,bottom}/compressed` | `usb_camera`: JPEG `CompressedImage`, frames `camera_usb_front` and `camera_usb_bottom`; graphical launch only |
 | `/sonar/request` service | `sonar.py` request validation; reports no object until a simulated Ping360 sweep exists |
 
-The `base_link` offset in the robot YAML aligns the CAD frame with `robosub-ros2`; confirm it on the vehicle. Headless launch omits the cameras while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
+The `base_link` offset in the robot YAML aligns the CAD frame with `robosub-ros2`; the thruster poses landing on the CAD rotors support it. Headless launch omits the cameras while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
 
 ### Display settings
 

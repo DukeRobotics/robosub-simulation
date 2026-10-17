@@ -39,15 +39,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY patches/novnc-close-status.patch /tmp/novnc-close-status.patch
 RUN patch --batch -p1 -d /usr/share/novnc < /tmp/novnc-close-status.patch
 
-# robosub-ros2 messages and services (thruster allocations, sonar request) for sim_adapter, from the
-# robosub-2026 commit whose driver interfaces it reproduces; definitions must match across containers. Declared here: an ARG invalidates every later RUN's cache.
+# robosub-ros2 at the robosub-2026 commit whose driver interfaces sim_adapter reproduces: messages and
+# services (thruster allocations, sonar request), which must match across containers, and the
+# static_transforms, controls and cv configs that place Crush's sensors, cameras and thrusters. Declared here: an ARG invalidates every later RUN's cache.
 ARG ROBOSUB_ROS2_REF=68f6d1dad032099d68cc2abd5a0e264a7ab502b3
-RUN git init /tmp/robosub-ros2 \
-    && git -C /tmp/robosub-ros2 remote add origin https://github.com/DukeRobotics/robosub-ros2.git \
-    && git -C /tmp/robosub-ros2 fetch --depth 1 --filter=blob:none origin ${ROBOSUB_ROS2_REF} \
-    && git -C /tmp/robosub-ros2 checkout FETCH_HEAD -- core/src/custom_msgs \
-    && mv /tmp/robosub-ros2/core/src/custom_msgs src/custom_msgs \
-    && rm -rf /tmp/robosub-ros2 \
+RUN git init /opt/robosub-ros2 \
+    && git -C /opt/robosub-ros2 remote add origin https://github.com/DukeRobotics/robosub-ros2.git \
+    && git -C /opt/robosub-ros2 fetch --depth 1 --filter=blob:none origin ${ROBOSUB_ROS2_REF} \
+    && git -C /opt/robosub-ros2 checkout FETCH_HEAD -- core/src/custom_msgs \
+       onboard/src/static_transforms/config onboard/src/controls/config onboard/src/cv/config \
+    && rm -rf /opt/robosub-ros2/.git \
+    && cp -r /opt/robosub-ros2/core/src/custom_msgs src/custom_msgs \
     && . /opt/ros/jazzy/setup.sh \
     && colcon build --merge-install --packages-select custom_msgs
 

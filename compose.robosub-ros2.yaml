@@ -1,0 +1,8 @@
+# Read Crush's sensor, camera and thruster poses from a local robosub-ros2 checkout instead of the
+# commit built into the image, so the sim follows the configs the robot code runs with:
+#   ROBOSUB_ROS2=../robosub-ros2 docker compose -f compose.yaml -f compose.robosub-ros2.yaml up
+# Restart the service after editing those configs. Messages still come from the image's pinned commit.
+services:
+  simulation:
+    volumes:
+      - ${ROBOSUB_ROS2:?Set ROBOSUB_ROS2 to a robosub-ros2 checkout}:/opt/robosub-ros2:ro

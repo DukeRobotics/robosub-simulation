@@ -15,7 +15,7 @@ from stonefish_ros2.msg import DVL
 
 from robosub_simulation.allocation import rotor_setpoints
 from robosub_simulation.robot import load_robot_config
-from robosub_simulation.sensors import COVARIANCE, Depth, Gyro, jpeg, quaternion, sim_rpy, vectornav_orientation
+from robosub_simulation.sensors import COVARIANCE, Depth, Gyro, jpeg, quaternion, vectornav_orientation
 
 RAW = '/simulation/crush/'
 # ponytail: constant pack voltage; only the real thrusters.py reads it.
@@ -32,7 +32,7 @@ class SimAdapter(Node):
         super().__init__('sim_adapter')
         config = load_robot_config(self.declare_parameter('robot_config', '').value)
         sensors = config['sensors']
-        self.mount = quaternion(sim_rpy(sensors['imu']['rpy']))
+        self.mount = quaternion(sensors['imu']['orientation'])
         self.body = None
         self.depth = Depth()
         self.gyro = Gyro(sensors['gyro']['rate'])
@@ -56,12 +56,14 @@ class SimAdapter(Node):
         self.setpoints = self.create_publisher(Float64MultiArray, RAW + 'thruster_setpoints', 1)
         self.create_subscription(ThrusterAllocs, '/controls/thruster_allocs', self.allocations_received, 1)
         # Cameras exist only when Stonefish renders (not headless).
-        for name in config['cameras']:
-            publisher = self.create_publisher(CompressedImage, f'/camera/usb/{name}/compressed', 1)
+        for name, camera in config['cameras'].items():
+            publisher = self.create_publisher(CompressedImage, camera['topic'], 1)
             self.create_subscription(
                 Image,
                 f'{RAW}camera/{name}/image_color',
-                lambda message, name=name, publisher=publisher: self.camera_received(message, name, publisher),
+                lambda message, frame=camera['frame'], publisher=publisher: self.camera_received(
+                    message, frame, publisher
+                ),
                 1,
             )
 
@@ -80,11 +82,11 @@ class SimAdapter(Node):
         response.is_object = False
         return response
 
-    def camera_received(self, message, name, publisher):
+    def camera_received(self, message, frame, publisher):
         output = CompressedImage()
         # usb_camera.py never fills the header; the stamp and frame are harmless extras here.
         output.header.stamp = message.header.stamp
-        output.header.frame_id = f'camera_usb_{name}'
+        output.header.frame_id = frame
         output.format = 'jpg'
         output.data = jpeg(message.width, message.height, message.data)
         publisher.publish(output)

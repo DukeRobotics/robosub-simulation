@@ -5,20 +5,77 @@ import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 from robosub_simulation.pool import _vector
-from robosub_simulation.sensors import sim_camera_rpy, sim_position, sim_rpy
+from robosub_simulation.sensors import rotation, sim_camera_rpy, sim_position, sim_rpy
+
+
+def read_robosub_ros2(root, robot):
+    """Static transforms by child frame, thrusters and USB cameras from a robosub-ros2 checkout."""
+
+    def read(package):
+        return yaml.safe_load((Path(root) / 'onboard/src' / package / 'config' / f'{robot}.yaml').read_text())
+
+    transforms = {item['child_frame_id']: item for item in read('static_transforms')['transforms'].values()}
+    return transforms, read('controls')['thrusters'], read('cv')['usb_cameras']
+
+
+def resolve(transforms, frame):
+    """Position and rotation of a static-transform frame in base_link (forward/left/up)."""
+    if frame == 'base_link':
+        return np.zeros(3), np.eye(3)
+    item = transforms[frame]
+    position, matrix = resolve(transforms, item['frame_id'])
+    local = rotation([item['roll'], item['pitch'], item['yaw']])
+    return position + matrix @ [item['x'], item['y'], item['z']], matrix @ local
 
 
 def load_robot_config(path):
+    """Sim physics from `path`; frames, thrusters and cameras from the robosub-ros2 checkout it names.
+
+    Mounts gain `position` and `orientation` in the Stonefish link frame (forward/right/down).
+    """
     path = Path(path)
     config = yaml.safe_load(path.read_text())
     config['model_data'] = yaml.safe_load((path.parent / config['model']).read_text())
-    # robosub-ros2 thruster poses (corner_link, degrees) in the Stonefish link frame (forward/right/down).
-    for thruster in config['thrusters']:
-        thruster['position'] = sim_position(config, thruster['pos'])
-        thruster['orientation'] = sim_rpy([math.radians(angle) for angle in thruster['rpy']])
+    transforms, thrusters, cameras = read_robosub_ros2(path.parent / config['robosub_ros2'], config['robot'])
+
+    def mount(frame, orient=sim_rpy, **values):
+        position, matrix = resolve(transforms, frame)
+        return {'frame': frame, 'position': sim_position(config, position), 'orientation': orient(matrix), **values}
+
+    config['sensors'] = {
+        name: mount(
+            sensor['frame'],
+            # A Stonefish DVL looks along its -z, so it takes the robosub-ros2 frame itself.
+            (lambda matrix: sim_rpy(matrix, reports_frame_axes=True)) if name == 'dvl' else sim_rpy,
+            rate=sensor['rate'],
+        )
+        for name, sensor in config['sensors'].items()
+    }
+    config['cameras'] = {
+        name: mount(
+            camera['frame_id'],
+            sim_camera_rpy,
+            rate=config['camera_rate'],
+            resolution=[camera['img_size']['width'], camera['img_size']['height']],
+            fov=float(camera['horizontal_fov']),
+            topic=camera['topic'],
+        )
+        for name, camera in cameras.items()
+    }
+    # controls config: corner_link poses with degree angles; force along each rotated +x, in allocation order.
+    corner, corner_matrix = resolve(transforms, 'corner_link')
+    config['thrusters'] = [
+        {
+            'name': thruster['name'],
+            'position': sim_position(config, corner + corner_matrix @ thruster['pos']),
+            'orientation': sim_rpy(corner_matrix @ rotation(np.radians(thruster['rpy']))),
+        }
+        for thruster in thrusters
+    ]
     return config
 
 
@@ -89,41 +146,28 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
         ET.SubElement(element, 'ros_service', set_enabled=f'/simulation/crush/{name}/set_enabled')
         return element
 
-    def mounted(name, kind, reports_frame_axes=False):
+    def mounted(name, kind, mount):
         """Sensor at its robosub-ros2 static transform."""
-        mount = config['sensors'][name]
-        return sensor(
-            name,
-            kind,
-            mount['rate'],
-            sim_position(config, mount['position']),
-            sim_rpy(mount['rpy'], reports_frame_axes),
-        )
+        return sensor(name, kind, mount['rate'], mount['position'], mount['orientation'])
 
     sensor('ground_truth', 'odometry', 30)
-    imu = mounted('imu', 'imu')
+    imu = mounted('imu', 'imu', config['sensors']['imu'])
     ET.SubElement(imu, 'noise', angle='0.001', angular_velocity='0.001', linear_acceleration='0.02')
-    gyro = mounted('gyro', 'imu')
+    gyro = mounted('gyro', 'imu', config['sensors']['gyro'])
     ET.SubElement(gyro, 'noise', angular_velocity='0.0002')
-    pressure = mounted('pressure', 'pressure')
+    pressure = mounted('pressure', 'pressure', config['sensors']['pressure'])
     ET.SubElement(pressure, 'noise', pressure='5.0')
-    dvl = mounted('dvl', 'dvl', reports_frame_axes=True)
+    dvl = mounted('dvl', 'dvl', config['sensors']['dvl'])
     ET.SubElement(dvl, 'specs', beam_angle='30')
     ET.SubElement(dvl, 'range', velocity='3 3 3', altitude_min='0.1', altitude_max='10')
     ET.SubElement(dvl, 'noise', velocity='0.002', altitude='0.005')
     dvl.find('ros_publisher').set('altitude_topic', '/simulation/crush/dvl/altitude')
     if cameras:
-        width, height = config['camera_resolution']
         for name, mount in config['cameras'].items():
-            camera = sensor(
-                f'camera/{name}',
-                'camera',
-                mount['rate'],
-                sim_position(config, mount['position']),
-                sim_camera_rpy(mount['rpy']),
-            )
+            camera = mounted(f'camera/{name}', 'camera', mount)
+            width, height = mount['resolution']
             ET.SubElement(
-                camera, 'specs', resolution_x=str(width), resolution_y=str(height), horizontal_fov=str(config['camera_fov'])
+                camera, 'specs', resolution_x=str(width), resolution_y=str(height), horizontal_fov=str(mount['fov'])
             )
     ET.SubElement(robot, 'ros_subscriber', thrusters='/simulation/crush/thruster_setpoints')
     ET.SubElement(robot, 'ros_publisher', thrusters='/simulation/crush/thruster_state')

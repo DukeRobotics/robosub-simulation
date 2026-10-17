@@ -1,5 +1,9 @@
-# Poses and frames below are copied from robosub-ros2 robosub-2026@68f6d1d (onboard/src):
-# controls/config/crush.yaml thrusters and static_transforms/config/crush.yaml.
+# Sensor, camera and thruster poses, camera specs and topics are read at launch from robosub-ros2:
+# onboard/src/{static_transforms,controls,cv}/config/<robot>.yaml. The image holds the pinned commit at
+# /opt/robosub-ros2; compose.robosub-ros2.yaml mounts a local checkout there instead. Only simulator
+# physics and rates live here.
+robot: crush
+robosub_ros2: /opt/robosub-ros2
 model: crush_model.yaml
 water_density: 1000.0
 quadratic_drag: [0.8, 0.8, 1.0]
@@ -11,35 +15,18 @@ thruster:
   max_omega: 150.0
   time_constant: 0.08
   watchdog: 0.4
-# T200s in /controls/thruster_allocs order. pos: corner_link metres; rpy: degrees, forward/left/up;
-# a positive allocation pushes along the rotated +x axis. Spin direction (cw) is ESC wiring, not modelled.
-thrusters:
-  - {name: front_right, pos: [0.001895, -0.38866, -0.003175], rpy: [0, 0, -135]}
-  - {name: middle_right_first, pos: [-0.15501, -0.34805, -0.003175], rpy: [0, 90, 0]}
-  - {name: middle_right_second, pos: [-0.32582, -0.34805, -0.003175], rpy: [0, 90, 0]}
-  - {name: back_right, pos: [-0.48273, -0.38866, -0.003175], rpy: [0, 0, 135]}
-  - {name: back_left, pos: [-0.48273, 0.09596, -0.003175], rpy: [0, 0, -135]}
-  - {name: middle_left_first, pos: [-0.15501, 0.05535, -0.003175], rpy: [0, 90, 0]}
-  - {name: middle_left_second, pos: [-0.32582, 0.05535, -0.003175], rpy: [0, 90, 0]}
-  - {name: front_left, pos: [0.001895, 0.09596, -0.003175], rpy: [0, 0, 135]}
 # robosub-ros2 base_link in the CAD link frame (forward/right/down). Estimated from the centroid of
 # the horizontal thrusters, which robosub-ros2 places symmetrically about base_link; confirm on the vehicle.
 base_link: [-0.06233, 0.0, -0.0066]
-# Sensor mounts: base_link -> corner_link, then corner_link -> sensor (metres and radians, forward/left/up).
-# Rates (Hz) follow each real driver; the fiber-optic gyro runs at 1 kHz on hardware.
-corner_link: [0.24042, 0.14635, 0.017975]
+# Simulated sensors and their robosub-ros2 static-transform frames. Rates (Hz) follow each real
+# driver; the fiber-optic gyro runs at 1 kHz on hardware.
 sensors:
-  imu: {position: [-0.172365, -0.179528, 0.040240], rpy: [0.0, 0.0, 3.141592653589793], rate: 20}
-  gyro: {position: [-0.317511, -0.2233, 0.048512], rpy: [0.0, 0.0, 0.0], rate: 100}
-  pressure: {position: [-0.412040, -0.241661, 0.061675], rpy: [0.0, 0.0, 0.0], rate: 20}
-  dvl: {position: [-0.240415, -0.14635, -0.200875], rpy: [0.0, 0.0, 0.0], rate: 10}
-# USB cameras: 640 x 480 with an 82 degree horizontal field of view (robosub-ros2 cv config).
-# ponytail: 5 Hz because software rendering is slow; raise it on a GPU host.
-cameras:
-  front: {position: [0.004559, -0.14635, -0.030175], rpy: [0.0, 0.0, 0.0], rate: 5}
-  bottom: {position: [-0.370415, -0.14635, -0.183143], rpy: [0.0, 1.5707963267948966, 0.0], rate: 5}
-camera_resolution: [640, 480]
-camera_fov: 82.0
+  imu: {frame: imu, rate: 20}
+  gyro: {frame: gyro, rate: 100}
+  pressure: {frame: pressure_sensor, rate: 20}
+  dvl: {frame: dvl, rate: 10}
+# Every usb_cameras entry in the cv config. ponytail: 5 Hz because software rendering is slow; raise it on a GPU host.
+camera_rate: 5
 teleop:
   linear_speed: 0.45
   angular_speed: 0.5

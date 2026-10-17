@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from robosub_simulation.robot import build_robot, load_robot_config
+from robosub_simulation.robot import build_robot, load_robot_config, read_robosub_ros2
 from PIL import Image
 from robosub_simulation.sensors import (
     Depth,
@@ -12,7 +12,6 @@ from robosub_simulation.sensors import (
     jpeg,
     quaternion,
     rotation,
-    sim_camera_rpy,
     sim_position,
     sim_rpy,
     vectornav_orientation,
@@ -26,24 +25,38 @@ def same_rotation(a, b):
 
 
 def test_mounts_convert_robosub_ros2_frames_into_the_frd_body():
-    origin = sim_position(CONFIG, -np.asarray(CONFIG['corner_link']))
-    np.testing.assert_allclose(origin, CONFIG['base_link'])
-    np.testing.assert_allclose(sim_position(CONFIG, np.asarray([0.1, 0.2, 0.3]) - CONFIG['corner_link']),
-                               np.asarray(CONFIG['base_link']) + [0.1, -0.2, -0.3])
+    np.testing.assert_allclose(sim_position(CONFIG, [0, 0, 0]), CONFIG['base_link'])
+    np.testing.assert_allclose(sim_position(CONFIG, [0.1, 0.2, 0.3]), np.asarray(CONFIG['base_link']) + [0.1, -0.2, -0.3])
     # The VN100 is yawed pi; FRD axes keep that yaw. A Stonefish DVL looks along -z, so it rolls pi.
-    np.testing.assert_allclose(rotation(sim_rpy([0, 0, math.pi])), rotation([0, 0, math.pi]), atol=1e-12)
-    np.testing.assert_allclose(rotation(sim_rpy([0, 0, 0], True)), np.diag([1, -1, -1]), atol=1e-12)
-    # A pitched-down camera pitches the same way in both conventions; yaw and pitch change sign.
-    np.testing.assert_allclose(rotation(sim_rpy([0.1, 0.2, 0.3])), rotation([0.1, -0.2, -0.3]), atol=1e-12)
+    np.testing.assert_allclose(rotation(sim_rpy(rotation([0, 0, math.pi]))), rotation([0, 0, math.pi]), atol=1e-12)
+    np.testing.assert_allclose(rotation(sim_rpy(np.eye(3), True)), np.diag([1, -1, -1]), atol=1e-12)
+    # Roll keeps its sign between conventions; pitch and yaw flip.
+    np.testing.assert_allclose(rotation(sim_rpy(rotation([0.1, 0.2, 0.3]))), rotation([0.1, -0.2, -0.3]), atol=1e-12)
+
+
+def test_poses_come_from_the_robosub_ros2_configs():
+    transforms, thrusters, cameras = read_robosub_ros2(CONFIG['robosub_ros2'], CONFIG['robot'])
+    corner = transforms['corner_link']
+    assert corner['frame_id'] == 'base_link'
+    for name, mount in CONFIG['sensors'].items():
+        item = transforms[mount['frame']]
+        assert item['frame_id'] == 'corner_link'
+        expected = [corner[axis] + item[axis] for axis in 'xyz']
+        np.testing.assert_allclose(mount['position'], sim_position(CONFIG, expected), err_msg=name)
+    assert [thruster['name'] for thruster in CONFIG['thrusters']] == [thruster['name'] for thruster in thrusters]
+    assert set(CONFIG['cameras']) == set(cameras)
+    for name, camera in cameras.items():
+        assert CONFIG['cameras'][name]['frame'] == camera['frame_id']
+        assert CONFIG['cameras'][name]['topic'] == camera['topic']
 
 
 def test_cameras_look_forward_and_down_with_image_up_toward_the_surface():
     # Stonefish renders along the camera's +z with -y as image up; the body is forward/right/down.
-    front = rotation(sim_camera_rpy(CONFIG['cameras']['front']['rpy']))
+    front = rotation(CONFIG['cameras']['front']['orientation'])
     np.testing.assert_allclose(front[:, 2], [1, 0, 0], atol=1e-12)
     np.testing.assert_allclose(-front[:, 1], [0, 0, -1], atol=1e-12)
     np.testing.assert_allclose(front[:, 0], [0, 1, 0], atol=1e-12)  # image right is vehicle right
-    bottom = rotation(sim_camera_rpy(CONFIG['cameras']['bottom']['rpy']))
+    bottom = rotation(CONFIG['cameras']['bottom']['orientation'])
     np.testing.assert_allclose(bottom[:, 2], [0, 0, 1], atol=1e-12)
     np.testing.assert_allclose(-bottom[:, 1], [1, 0, 0], atol=1e-12)  # image up is vehicle forward
 
@@ -61,14 +74,14 @@ def test_robot_xml_mounts_sensors_at_their_static_transforms():
     mounts = {**CONFIG['sensors'], **{f'camera/{name}': mount for name, mount in CONFIG['cameras'].items()}}
     for name, mount in mounts.items():
         np.testing.assert_allclose(
-            np.fromstring(sensors[name].find('origin').get('xyz'), sep=' '), sim_position(CONFIG, mount['position'])
+            np.fromstring(sensors[name].find('origin').get('xyz'), sep=' '), mount['position']
         )
         assert float(sensors[name].get('rate')) == mount['rate']
 
 
 def test_level_vehicle_reproduces_the_vectornav_driver_orientation():
     level = quaternion([0, 0, 0])
-    mount = quaternion(sim_rpy(CONFIG['sensors']['imu']['rpy']))
+    mount = quaternion(CONFIG['sensors']['imu']['orientation'])
     # q_ned2enu * yaw(pi): what task_planning reads from /vectornav/imu on a level, north-facing Crush.
     assert same_rotation(vectornav_orientation(level, mount), quaternion([math.pi, 0, math.pi / 2]))
     turned = quaternion([0, 0, 0.4])
