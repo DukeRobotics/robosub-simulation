@@ -4,9 +4,11 @@ Each conversion mirrors a driver in robosub-ros2 main@55b6d17, quirks included, 
 production EKF, controls and task planning see the same messages as on the vehicle.
 """
 
+import io
 import math
 
 import numpy as np
+from PIL import Image
 
 # ROS base_link is forward/left/up; Stonefish bodies are forward/right/down. This is also a pi roll.
 FLU_TO_FRD = np.diag([1.0, -1.0, -1.0])
@@ -62,6 +64,16 @@ def sim_rpy(rpy, reports_frame_axes=False):
     return euler(matrix @ FLU_TO_FRD if reports_frame_axes else matrix)
 
 
+# A Stonefish camera looks along its +z with +y down, like a ROS optical frame; this rotates
+# robosub-ros2's forward/left/up camera frame onto that optical frame.
+OPTICAL = rotation((-math.pi / 2, 0.0, -math.pi / 2))
+
+
+def sim_camera_rpy(rpy):
+    """Stonefish orientation, in the FRD body, of a camera whose robosub-ros2 frame looks along +x."""
+    return euler(FLU_TO_FRD @ rotation(rpy) @ OPTICAL)
+
+
 def quaternion(rpy):
     """ROS fixed-axis roll/pitch/yaw as an (x, y, z, w) quaternion."""
     cr, sr = math.cos(rpy[0] / 2), math.sin(rpy[0] / 2)
@@ -96,6 +108,13 @@ def vectornav_orientation(body, mount):
     `body` is the Stonefish link attitude in NED and `mount` the VN100 mount in that link.
     """
     return multiply(VN_NED_TO_ENU, multiply(body, mount))
+
+
+def jpeg(width, height, rgb, quality=90):
+    """JPEG bytes of a Stonefish rgb8 image, as the USB camera driver sends them."""
+    output = io.BytesIO()
+    Image.frombuffer('RGB', (width, height), bytes(rgb), 'raw', 'RGB', 0, 1).save(output, 'JPEG', quality=quality)
+    return output.getvalue()
 
 
 class Depth:

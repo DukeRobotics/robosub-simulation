@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 from robosub_simulation.pool import _vector
-from robosub_simulation.sensors import sim_position, sim_rpy
+from robosub_simulation.sensors import sim_camera_rpy, sim_position, sim_rpy
 
 
 def load_robot_config(path):
@@ -109,9 +109,18 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
     ET.SubElement(dvl, 'noise', velocity='0.002', altitude='0.005')
     dvl.find('ros_publisher').set('altitude_topic', '/simulation/crush/dvl/altitude')
     if cameras:
-        position = [a + b for a, b in zip(model['center_of_mass'], (0.36, 0, 0), strict=True)]
-        camera = sensor('camera/front', 'camera', 5, position, rpy=(math.pi / 2, 0, math.pi / 2))
-        ET.SubElement(camera, 'specs', resolution_x='320', resolution_y='240', horizontal_fov='80')
+        width, height = config['camera_resolution']
+        for name, mount in config['cameras'].items():
+            camera = sensor(
+                f'camera/{name}',
+                'camera',
+                mount['rate'],
+                sim_position(config, mount['position']),
+                sim_camera_rpy(mount['rpy']),
+            )
+            ET.SubElement(
+                camera, 'specs', resolution_x=str(width), resolution_y=str(height), horizontal_fov=str(config['camera_fov'])
+            )
     ET.SubElement(robot, 'ros_subscriber', thrusters='/simulation/crush/thruster_setpoints')
     ET.SubElement(robot, 'ros_publisher', thrusters='/simulation/crush/thruster_state')
     ET.SubElement(robot, 'ros_base_link_transform', publish='true')

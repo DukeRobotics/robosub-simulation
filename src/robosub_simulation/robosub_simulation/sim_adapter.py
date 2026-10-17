@@ -5,12 +5,12 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion, TwistWithCo
 from nav_msgs.msg import Odometry
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from sensor_msgs.msg import FluidPressure, Imu
+from sensor_msgs.msg import CompressedImage, FluidPressure, Image, Imu
 from std_msgs.msg import Float64
 from stonefish_ros2.msg import DVL
 
 from robosub_simulation.robot import load_robot_config
-from robosub_simulation.sensors import COVARIANCE, Depth, Gyro, quaternion, sim_rpy, vectornav_orientation
+from robosub_simulation.sensors import COVARIANCE, Depth, Gyro, jpeg, quaternion, sim_rpy, vectornav_orientation
 
 RAW = '/simulation/crush/'
 # ponytail: constant pack voltage; only the real thrusters.py reads it.
@@ -25,7 +25,8 @@ def orientation(values):
 class SimAdapter(Node):
     def __init__(self):
         super().__init__('sim_adapter')
-        sensors = load_robot_config(self.declare_parameter('robot_config', '').value)['sensors']
+        config = load_robot_config(self.declare_parameter('robot_config', '').value)
+        sensors = config['sensors']
         self.mount = quaternion(sim_rpy(sensors['imu']['rpy']))
         self.body = None
         self.depth = Depth()
@@ -42,6 +43,23 @@ class SimAdapter(Node):
         self.create_subscription(FluidPressure, RAW + 'pressure', self.pressure_received, 10)
         self.create_subscription(DVL, RAW + 'dvl', self.dvl_received, 10)
         self.create_timer(1.0, lambda: self.voltage.publish(Float64(data=VOLTAGE)))
+        # Cameras exist only when Stonefish renders (not headless).
+        for name in config['cameras']:
+            publisher = self.create_publisher(CompressedImage, f'/camera/usb/{name}/compressed', 1)
+            self.create_subscription(
+                Image,
+                f'{RAW}camera/{name}/image_color',
+                lambda message, name=name, publisher=publisher: self.camera_received(message, name, publisher),
+                1,
+            )
+
+    def camera_received(self, message, name, publisher):
+        output = CompressedImage()
+        output.header.stamp = message.header.stamp
+        output.header.frame_id = f'camera_usb_{name}'
+        output.format = 'jpeg'
+        output.data = jpeg(message.width, message.height, message.data)
+        publisher.publish(output)
 
     def ground_truth_received(self, message):
         attitude = message.pose.pose.orientation

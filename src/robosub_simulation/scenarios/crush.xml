@@ -203,10 +203,17 @@
     </sensor>
     <sensor name="camera/front" type="camera" rate="5">
       <link name="base_link" />
-      <origin xyz="0.292156148253 0.0264337175238 -0.00780963552351" rpy="1.57079632679 0 1.57079632679" />
+      <origin xyz="0.182649 0 0.0056" rpy="1.57079632679 -0 1.57079632679" />
       <ros_publisher topic="/simulation/crush/camera/front" />
       <ros_service set_enabled="/simulation/crush/camera/front/set_enabled" />
-      <specs resolution_x="320" resolution_y="240" horizontal_fov="80" />
+      <specs resolution_x="640" resolution_y="480" horizontal_fov="82.0" />
+    </sensor>
+    <sensor name="camera/bottom" type="camera" rate="5">
+      <link name="base_link" />
+      <origin xyz="-0.192325 0 0.158568" rpy="1.22464679915e-16 -6.12323399574e-17 1.57079632679" />
+      <ros_publisher topic="/simulation/crush/camera/bottom" />
+      <ros_service set_enabled="/simulation/crush/camera/bottom/set_enabled" />
+      <specs resolution_x="640" resolution_y="480" horizontal_fov="82.0" />
     </sensor>
     <ros_subscriber thrusters="/simulation/crush/thruster_setpoints" />
     <ros_publisher thrusters="/simulation/crush/thruster_state" />

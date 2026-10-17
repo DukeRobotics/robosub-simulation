@@ -38,7 +38,7 @@ def main():
     assert setpoints and all(len(values) == 8 and all(abs(value) <= 1 for value in values) for values in setpoints)
     assert any(any(abs(value) > 0.01 for value in values) for values in setpoints), 'Thrusters never fired'
     cameras = [record['values'] for record in records if record['topic'] == 'camera']
-    assert cameras and all(values[0:2] == [320, 240] and values[2] > 0 for values in cameras), 'Camera images missing'
+    assert cameras and all(values[0:2] == [640, 480] and values[2] > 0 for values in cameras), 'Camera images missing'
     print(
         'PASS: browser keys reach ROS, all twelve directions move the robot, chording, input expiry, '
         'bounded thrusters, stable motion, real camera images'

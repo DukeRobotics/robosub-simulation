@@ -1,14 +1,18 @@
+import io
 import math
 from pathlib import Path
 
 import numpy as np
 import pytest
 from robosub_simulation.robot import build_robot, load_robot_config
+from PIL import Image
 from robosub_simulation.sensors import (
     Depth,
     Gyro,
+    jpeg,
     quaternion,
     rotation,
+    sim_camera_rpy,
     sim_position,
     sim_rpy,
     vectornav_orientation,
@@ -33,9 +37,29 @@ def test_mounts_convert_robosub_ros2_frames_into_the_frd_body():
     np.testing.assert_allclose(rotation(sim_rpy([0.1, 0.2, 0.3])), rotation([0.1, -0.2, -0.3]), atol=1e-12)
 
 
+def test_cameras_look_forward_and_down_with_image_up_toward_the_surface():
+    # Stonefish renders along the camera's +z with -y as image up; the body is forward/right/down.
+    front = rotation(sim_camera_rpy(CONFIG['cameras']['front']['rpy']))
+    np.testing.assert_allclose(front[:, 2], [1, 0, 0], atol=1e-12)
+    np.testing.assert_allclose(-front[:, 1], [0, 0, -1], atol=1e-12)
+    np.testing.assert_allclose(front[:, 0], [0, 1, 0], atol=1e-12)  # image right is vehicle right
+    bottom = rotation(sim_camera_rpy(CONFIG['cameras']['bottom']['rpy']))
+    np.testing.assert_allclose(bottom[:, 2], [0, 0, 1], atol=1e-12)
+    np.testing.assert_allclose(-bottom[:, 1], [1, 0, 0], atol=1e-12)  # image up is vehicle forward
+
+
+def test_camera_jpeg_preserves_colour_order():
+    pixels = bytes(([255, 0, 0] * 32 + [0, 255, 0] * 32) * 16)  # rgb8: red left half, green right half
+    decoded = np.asarray(Image.open(io.BytesIO(jpeg(64, 16, pixels))))
+    assert decoded.shape == (16, 64, 3)
+    assert decoded[8, 4, 0] > 200 and decoded[8, 4, 1] < 60
+    assert decoded[8, 60, 1] > 200 and decoded[8, 60, 0] < 60
+
+
 def test_robot_xml_mounts_sensors_at_their_static_transforms():
     sensors = {sensor.get('name'): sensor for sensor in build_robot(CONFIG).getroot().findall('robot/sensor')}
-    for name, mount in CONFIG['sensors'].items():
+    mounts = {**CONFIG['sensors'], **{f'camera/{name}': mount for name, mount in CONFIG['cameras'].items()}}
+    for name, mount in mounts.items():
         np.testing.assert_allclose(
             np.fromstring(sensors[name].find('origin').get('xyz'), sep=' '), sim_position(CONFIG, mount['position'])
         )

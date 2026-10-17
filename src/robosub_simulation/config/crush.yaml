@@ -32,6 +32,13 @@ sensors:
   gyro: {position: [-0.317511, -0.2233, 0.048512], rpy: [0.0, 0.0, 0.0], rate: 100}
   pressure: {position: [-0.412040, -0.241661, 0.061675], rpy: [0.0, 0.0, 0.0], rate: 20}
   dvl: {position: [-0.240415, -0.14635, -0.200875], rpy: [0.0, 0.0, 0.0], rate: 10}
+# USB cameras: 640 x 480 with an 82 degree horizontal field of view (robosub-ros2 cv config).
+# ponytail: 5 Hz because software rendering is slow; raise it on a GPU host.
+cameras:
+  front: {position: [0.004559, -0.14635, -0.030175], rpy: [0.0, 0.0, 0.0], rate: 5}
+  bottom: {position: [-0.370415, -0.14635, -0.183143], rpy: [0.0, 1.5707963267948966, 0.0], rate: 5}
+camera_resolution: [640, 480]
+camera_fov: 82.0
 teleop:
   linear_speed: 0.45
   angular_speed: 0.5
