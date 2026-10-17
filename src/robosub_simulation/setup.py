@@ -28,6 +28,7 @@ setup(
             'generate_pool = robosub_simulation.pool:main',
             'generate_robot = robosub_simulation.robot:main',
             'teleop_mixer = robosub_simulation.teleop:main',
+            'sim_adapter = robosub_simulation.sim_adapter:main',
         ]
     },
 )

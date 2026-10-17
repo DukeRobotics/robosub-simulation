@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from robosub_simulation.pool import _vector
+from robosub_simulation.sensors import sim_position, sim_rpy
 
 
 def load_robot_config(path):
@@ -75,27 +76,41 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
         thrust = ET.SubElement(thruster, 'thrust_model', type='quadratic')
         ET.SubElement(thrust, 'thrust_coeff', value=str(specifications['max_force'] / specifications['max_omega'] ** 2))
 
-    def sensor(name, kind, rate, offset=(0, 0, 0), rpy=(0, 0, 0)):
+    def sensor(name, kind, rate, position=None, rpy=(0, 0, 0)):
         element = ET.SubElement(robot, 'sensor', name=name, type=kind, rate=str(rate))
         ET.SubElement(element, 'link', name='base_link')
-        position = [a + b for a, b in zip(model['center_of_mass'], offset, strict=True)]
+        position = model['center_of_mass'] if position is None else position
         ET.SubElement(element, 'origin', xyz=_vector(position), rpy=_vector(rpy))
         ET.SubElement(element, 'ros_publisher', topic=f'/simulation/crush/{name}')
         ET.SubElement(element, 'ros_service', set_enabled=f'/simulation/crush/{name}/set_enabled')
         return element
 
+    def mounted(name, kind, reports_frame_axes=False):
+        """Sensor at its robosub-ros2 static transform."""
+        mount = config['sensors'][name]
+        return sensor(
+            name,
+            kind,
+            mount['rate'],
+            sim_position(config, mount['position']),
+            sim_rpy(mount['rpy'], reports_frame_axes),
+        )
+
     sensor('ground_truth', 'odometry', 30)
-    imu = sensor('imu', 'imu', 50)
+    imu = mounted('imu', 'imu')
     ET.SubElement(imu, 'noise', angle='0.001', angular_velocity='0.001', linear_acceleration='0.02')
-    pressure = sensor('pressure', 'pressure', 20)
+    gyro = mounted('gyro', 'imu')
+    ET.SubElement(gyro, 'noise', angular_velocity='0.0002')
+    pressure = mounted('pressure', 'pressure')
     ET.SubElement(pressure, 'noise', pressure='5.0')
-    dvl = sensor('dvl', 'dvl', 20, offset=(0, 0, 0.16), rpy=(math.pi, 0, 0))
+    dvl = mounted('dvl', 'dvl', reports_frame_axes=True)
     ET.SubElement(dvl, 'specs', beam_angle='30')
     ET.SubElement(dvl, 'range', velocity='3 3 3', altitude_min='0.1', altitude_max='10')
     ET.SubElement(dvl, 'noise', velocity='0.002', altitude='0.005')
     dvl.find('ros_publisher').set('altitude_topic', '/simulation/crush/dvl/altitude')
     if cameras:
-        camera = sensor('camera/front', 'camera', 5, offset=(0.36, 0, 0), rpy=(math.pi / 2, 0, math.pi / 2))
+        position = [a + b for a, b in zip(model['center_of_mass'], (0.36, 0, 0), strict=True)]
+        camera = sensor('camera/front', 'camera', 5, position, rpy=(math.pi / 2, 0, math.pi / 2))
         ET.SubElement(camera, 'specs', resolution_x='320', resolution_y='240', horizontal_fov='80')
     ET.SubElement(robot, 'ros_subscriber', thrusters='/simulation/crush/thruster_setpoints')
     ET.SubElement(robot, 'ros_publisher', thrusters='/simulation/crush/thruster_state')

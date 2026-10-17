@@ -63,13 +63,24 @@ The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). 
 | `/simulation/crush/thruster_setpoints` | `std_msgs/msg/Float64MultiArray`, eight normalized rotor setpoints in XML order |
 | `/simulation/crush/thruster_state` | `stonefish_ros2/msg/ThrusterState`, actual rotor speeds and thrust |
 | `/simulation/crush/ground_truth` | `nav_msgs/msg/Odometry`, pose in NED; twist in body axes at the centre of mass |
-| `/simulation/crush/imu` | `sensor_msgs/msg/Imu` |
+| `/simulation/crush/imu` | `sensor_msgs/msg/Imu`, VN100 mount; its orientation uses upstream's Y-X-Z Euler order, so use ground truth for attitude |
+| `/simulation/crush/gyro` | `sensor_msgs/msg/Imu`, fiber-optic gyro mount at 100 Hz |
 | `/simulation/crush/pressure` | `sensor_msgs/msg/FluidPressure` |
 | `/simulation/crush/dvl` | `stonefish_ros2/msg/DVL` |
 | `/simulation/crush/dvl/altitude` | `sensor_msgs/msg/Range`, distance to the floor |
 | `/simulation/crush/camera/front/image_color` | `sensor_msgs/msg/Image`, built-in 320 × 240 camera at 5 Hz |
 
-These are raw simulator topics in Stonefish's frame conventions. Production topic names and frame conversions for `robosub-ros2` remain a later integration step. Headless launch omits the camera while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
+These are raw simulator topics in Stonefish's frame conventions. Sensors sit at Crush's `robosub-ros2` static transforms in [`crush.yaml`](src/robosub_simulation/config/crush.yaml), and the `sim_adapter` node republishes them exactly as the real drivers do (robosub-ros2 main@55b6d17, quirks included):
+
+| Topic | Reproduces |
+| --- | --- |
+| `/vectornav/imu` | VN100 with `use_enu: false`: 20 Hz, frame `imu`, raw FRD rates and specific force, orientation `q_ned2enu * q` |
+| `/sensors/depth` | `peripheral_sensors.py`: frame `odom`, `position.z` negative underwater, density 997, 0.01 m steps, median of three |
+| `/sensors/dvl/odom` | `dvl_to_odom.py`: child frame `dvl`, forward/left/up velocity, dropped without bottom lock |
+| `/sensors/gyro/angular_velocity/twist`, `/sensors/gyro/angular_position/pose` | `gyro.py`: frame `gyro`, counter-clockwise rate and its integral from zero |
+| `/sensors/voltage` | constant 16 V for `thrusters.py` |
+
+The `base_link` offset in the robot YAML aligns the CAD frame with `robosub-ros2`; confirm it on the vehicle. Headless launch omits the camera while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
 
 ### Display settings
 
@@ -208,7 +219,7 @@ docker run --rm -e ROS_DOMAIN_ID=89 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/robot_smoke.py
 ```
 
-The 42 Python tests cover pool geometry and configuration, robot XML, CAD inertia conversion, neutral displacement, thruster allocation, actuator frame invariance and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors.
+The 47 Python tests cover pool geometry and configuration, robot XML, sensor mounts and driver conversions, CAD inertia conversion, neutral displacement, thruster allocation, actuator frame invariance and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors.
 
 With the browser viewer running, install the browser test dependencies and run the UI check:
 

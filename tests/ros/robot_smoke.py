@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import rclpy
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import PoseWithCovarianceStamped, Twist, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import FluidPressure, Imu, Range
 from std_srvs.srv import SetBool
@@ -33,6 +33,18 @@ def main():
             node.create_subscription(
                 kind, '/simulation/crush/' + name, lambda message, key=name: messages.update({key: message}), 10
             )
+        )
+    # Crush's real driver topics from sim_adapter, consumed by robosub-ros2.
+    real = {}
+    for name, kind in (
+        ('/vectornav/imu', Imu),
+        ('/sensors/depth', PoseWithCovarianceStamped),
+        ('/sensors/dvl/odom', Odometry),
+        ('/sensors/gyro/angular_velocity/twist', TwistWithCovarianceStamped),
+        ('/sensors/gyro/angular_position/pose', PoseWithCovarianceStamped),
+    ):
+        subscriptions.append(
+            node.create_subscription(kind, name, lambda message, key=name: real.update({key: message}), 10)
         )
     publisher = node.create_publisher(Twist, '/simulation/crush/cmd_vel', 1)
 
@@ -69,10 +81,15 @@ def main():
             )
             try:
                 deadline = time.monotonic() + 30
-                while len(messages) < 6 and time.monotonic() < deadline:
+                while (len(messages) < 6 or len(real) < 5) and time.monotonic() < deadline:
                     rclpy.spin_once(node, timeout_sec=0.1)
                     assert process.poll() is None, log.read_text()
                 assert len(messages) == 6, f'Missing sensors: {messages.keys()}\n{log.read_text()}'
+                assert len(real) == 5, f'Missing adapter topics: {real.keys()}\n{log.read_text()}'
+                depth = real['/sensors/depth'].pose.pose.position.z
+                assert -1.4 < depth < -0.6, f'Depth must be negative underwater: {depth}'
+                acceleration = real['/vectornav/imu'].linear_acceleration.z
+                assert -10.3 < acceleration < -9.3, f'VN100 FRD specific force at rest: {acceleration}'
                 position = messages['ground_truth'].pose.pose.position
                 assert 0.8 < position.z < 1.2, f'Incorrect spawn depth: {position.z}'
                 assert np.linalg.norm(velocity()) < 0.01, f'Neutral-buoyancy drift: {velocity()}'
@@ -87,6 +104,15 @@ def main():
                     spin(3.0, command)
                     measured = velocity()
                     assert measured[axis] > 0.005, f'Axis {axis} did not move in the commanded direction: {measured}'
+                    if axis == 0:
+                        dvl = real['/sensors/dvl/odom'].twist.twist.linear.x
+                        assert dvl > 0.005, f'DVL forward velocity is FLU +x: {dvl}'
+                    if axis == 1:
+                        dvl = real['/sensors/dvl/odom'].twist.twist.linear.y
+                        assert dvl < -0.005, f'Moving right is FLU -y: {dvl}'
+                    if axis == 5:
+                        rate = real['/sensors/gyro/angular_velocity/twist'].twist.twist.angular.z
+                        assert rate < -0.005, f'Clockwise turn is a negative gyro rate: {rate}'
                     print(f'Axis {axis}: body velocity {measured.round(4).tolist()}', flush=True)
                     spin(2.0, Twist())
 
@@ -125,8 +151,11 @@ def main():
         print(content[-1800:])
         assert process.returncode == 0
         assert 'process has died' not in content, 'A simulator process crashed during shutdown'
-        assert content.count('process has finished cleanly') == 2, 'Both simulator and mixer must stop cleanly'
-        print('PASS: neutral spawn, real sensor messages, six-axis thruster motion, command timeout, clean shutdown')
+        assert content.count('process has finished cleanly') == 3, 'Simulator, adapter and mixer must stop cleanly'
+        print(
+            'PASS: neutral spawn, real sensor messages, robosub-ros2 sensor topics, six-axis thruster motion, '
+            'command timeout, clean shutdown'
+        )
 
 
 if __name__ == '__main__':

@@ -113,6 +113,18 @@ def _launch_pool(context):
         ),
         node,
     ]
+    if spawn_robot:
+        # Crush's real driver topics for robosub-ros2; harmless when that stack is not running.
+        actions.append(
+            Node(
+                package='robosub_simulation',
+                executable='sim_adapter',
+                namespace='simulation',
+                name='sim_adapter',
+                parameters=[{'robot_config': value('robot_config')}],
+                output='screen',
+            )
+        )
     if teleop:
         mixer = Node(
             package='robosub_simulation',

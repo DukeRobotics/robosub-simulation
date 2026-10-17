@@ -20,6 +20,18 @@ thrusters:
   - {name: vertical_front_left, position: [0.012375, -0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
   - {name: vertical_rear_right, position: [-0.158425, 0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
   - {name: vertical_rear_left, position: [-0.158425, -0.2017, -0.00625622], rpy: [0.0, -1.5707963267948966, 0.0]}
+# robosub-ros2 base_link in the CAD link frame (forward/right/down). Estimated from the centroid of
+# the horizontal thrusters, which robosub-ros2 places symmetrically about base_link; confirm on the vehicle.
+base_link: [-0.06233, 0.0, -0.0066]
+# Sensor mounts copied from robosub-ros2 main@55b6d17 static_transforms/config/crush.yaml:
+# base_link -> corner_link, then corner_link -> sensor (metres and radians, forward/left/up).
+# Rates (Hz) follow each real driver; the fiber-optic gyro runs at 1 kHz on hardware.
+corner_link: [0.24042, 0.14635, 0.017975]
+sensors:
+  imu: {position: [-0.238649, -0.179528, 0.040240], rpy: [0.0, 0.0, 3.141592653589793], rate: 20}
+  gyro: {position: [-0.317511, -0.2233, 0.048512], rpy: [0.0, 0.0, 0.0], rate: 100}
+  pressure: {position: [-0.412040, -0.241661, 0.061675], rpy: [0.0, 0.0, 0.0], rate: 20}
+  dvl: {position: [-0.240415, -0.14635, -0.200875], rpy: [0.0, 0.0, 0.0], rate: 10}
 teleop:
   linear_speed: 0.45
   angular_speed: 0.5
