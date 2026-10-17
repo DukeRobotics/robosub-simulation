@@ -80,6 +80,7 @@ These are raw simulator topics in Stonefish's frame conventions. Sensors sit at 
 | `/sensors/gyro/angular_velocity/twist`, `/sensors/gyro/angular_position/pose` | `gyro.py`: frame `gyro`, counter-clockwise rate and its integral from zero |
 | `/sensors/voltage` | constant 16 V for `thrusters.py` |
 | `/camera/usb/{front,bottom}/compressed` | `usb_camera`: JPEG `CompressedImage`, frames `camera_usb_front` and `camera_usb_bottom`; graphical launch only |
+| `/sonar/request` service | `sonar.py` request validation; reports no object until a simulated Ping360 sweep exists |
 
 The `base_link` offset in the robot YAML aligns the CAD frame with `robosub-ros2`; confirm it on the vehicle. Headless launch omits the cameras while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
 

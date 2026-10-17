@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import rclpy
+from custom_msgs.srv import SonarSweepRequest
 from geometry_msgs.msg import PoseWithCovarianceStamped, Twist, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import FluidPressure, Imu, Range
@@ -90,6 +91,11 @@ def main():
                 assert -1.4 < depth < -0.6, f'Depth must be negative underwater: {depth}'
                 acceleration = real['/vectornav/imu'].linear_acceleration.z
                 assert -10.3 < acceleration < -9.3, f'VN100 FRD specific force at rest: {acceleration}'
+                sonar = node.create_client(SonarSweepRequest, '/sonar/request')
+                assert sonar.wait_for_service(timeout_sec=3), 'task_planning blocks without /sonar/request'
+                future = sonar.call_async(SonarSweepRequest.Request(start_angle=-15.0, end_angle=15.0, distance_of_scan=10.0))
+                rclpy.spin_until_future_complete(node, future, timeout_sec=3)
+                assert future.done() and future.result().success and not future.result().is_object
                 position = messages['ground_truth'].pose.pose.position
                 assert 0.8 < position.z < 1.2, f'Incorrect spawn depth: {position.z}'
                 assert np.linalg.norm(velocity()) < 0.01, f'Neutral-buoyancy drift: {velocity()}'

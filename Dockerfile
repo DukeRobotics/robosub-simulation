@@ -39,6 +39,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY patches/novnc-close-status.patch /tmp/novnc-close-status.patch
 RUN patch --batch -p1 -d /usr/share/novnc < /tmp/novnc-close-status.patch
 
+# robosub-ros2 messages and services (sonar request) that sim_adapter serves, from the main
+# whose driver interfaces it reproduces. Declared here: an ARG invalidates every later RUN's cache.
+ARG ROBOSUB_ROS2_REF=55b6d176a2e901baeea7969cdd97c0e31da23106
+RUN git init /tmp/robosub-ros2 \
+    && git -C /tmp/robosub-ros2 remote add origin https://github.com/DukeRobotics/robosub-ros2.git \
+    && git -C /tmp/robosub-ros2 fetch --depth 1 --filter=blob:none origin ${ROBOSUB_ROS2_REF} \
+    && git -C /tmp/robosub-ros2 checkout FETCH_HEAD -- core/src/custom_msgs \
+    && mv /tmp/robosub-ros2/core/src/custom_msgs src/custom_msgs \
+    && rm -rf /tmp/robosub-ros2 \
+    && . /opt/ros/jazzy/setup.sh \
+    && colcon build --merge-install --packages-select custom_msgs
+
 COPY src/robosub_stonefish/ src/robosub_stonefish/
 COPY src/robosub_simulation/ src/robosub_simulation/
 RUN . /opt/ros/jazzy/setup.sh \
