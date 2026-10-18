@@ -29,6 +29,7 @@ setup(
             'generate_robot = robosub_simulation.robot:main',
             'teleop_mixer = robosub_simulation.teleop:main',
             'sim_adapter = robosub_simulation.sim_adapter:main',
+            'sim_sonar = robosub_simulation.sim_sonar:main',
         ]
     },
 )

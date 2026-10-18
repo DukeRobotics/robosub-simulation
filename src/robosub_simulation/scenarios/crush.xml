@@ -201,6 +201,14 @@
       <range velocity="3 3 3" altitude_min="0.1" altitude_max="10" />
       <noise velocity="0.002" altitude="0.005" />
     </sensor>
+    <sensor name="sonar" type="multibeam" rate="20">
+      <link name="base_link" />
+      <origin xyz="0.15767000012 0 0.103902886" rpy="0 -0 0" />
+      <ros_publisher topic="/simulation/crush/sonar" />
+      <ros_service set_enabled="/simulation/crush/sonar/set_enabled" />
+      <specs fov="360" steps="400" />
+      <range distance_min="0.45" distance_max="50" />
+    </sensor>
     <sensor name="camera/front" type="camera" rate="5">
       <link name="base_link" />
       <origin xyz="0.18264459412 0 0.0056" rpy="1.57079632679 -0 1.57079632679" />

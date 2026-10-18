@@ -161,7 +161,7 @@ def test_changing_link_origin_preserves_allocation():
 
 def test_headless_robot_keeps_scalar_sensors_and_omits_the_camera():
     sensors = build_robot(CONFIG, cameras=False).getroot().findall('robot/sensor')
-    assert {sensor.get('type') for sensor in sensors} == {'odometry', 'imu', 'pressure', 'dvl'}
+    assert {sensor.get('type') for sensor in sensors} == {'odometry', 'imu', 'pressure', 'dvl', 'multibeam'}
     assert all(sensor.find('ros_publisher') is not None for sensor in sensors)
     for mesh in build_robot(CONFIG).getroot().iter('mesh'):
         assert (PACKAGE / 'scenarios' / mesh.get('filename')).is_file()

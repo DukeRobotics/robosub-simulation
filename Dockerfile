@@ -33,7 +33,7 @@ RUN . /opt/ros/jazzy/setup.sh \
 
 # Cache browser dependencies separately from changes to our ROS packages.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-numpy \
+    libgl1-mesa-dri libglx-mesa0 libegl-mesa0 python3-numpy python3-scipy python3-sklearn \
     xvfb x11vnc novnc websockify openbox x11-utils xdotool mesa-utils curl \
     && rm -rf /var/lib/apt/lists/*
 COPY patches/novnc-close-status.patch /tmp/novnc-close-status.patch
@@ -49,6 +49,7 @@ RUN git init /opt/robosub-ros2 \
     && git -C /opt/robosub-ros2 checkout FETCH_HEAD -- core/src/custom_msgs \
        onboard/src/static_transforms/config onboard/src/controls/config onboard/src/cv/config \
        onboard/src/vectornav/vectornav/config onboard/src/offboard_comms/config \
+       onboard/src/sonar/sonar onboard/src/sonar/config \
     && rm -rf /opt/robosub-ros2/.git \
     && cp -r /opt/robosub-ros2/core/src/custom_msgs src/custom_msgs \
     && . /opt/ros/jazzy/setup.sh \

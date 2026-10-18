@@ -87,7 +87,7 @@ Restart the service after changing those configs. [`crush.yaml`](src/robosub_sim
 | `/sensors/voltage` | constant 16 V for `thrusters.py` |
 | `/controls/thruster_allocs` (subscribed) | `thrusters.py` and the ESCs: eight normalized forces become rotor setpoints, `sign(f)·√|f|`; launch with `enable_teleop:=false` so only `robosub-ros2` controls commands the thrusters |
 | `/camera/usb/{front,bottom}/compressed` | `usb_camera`: JPEG `CompressedImage`, frames `camera_usb_front` and `camera_usb_bottom`; graphical launch only |
-| `/sonar/request` service | `sonar.py` request validation; reports no object until a simulated Ping360 sweep exists |
+| `/sonar/request` service | `sonar.py` (separate `sim_sonar` node): a Stonefish ray fan at `sonar_ping_360` becomes a 1200-sample Ping360 sweep per gradian, taken over the sweep's real duration, then processed by `robosub-ros2`'s own `sonar_object_detection.py` with the constants in its `sonar.py` |
 
 The `base_link` offset in the robot YAML aligns the CAD frame with `robosub-ros2`; the thruster poses landing on the CAD rotors support it. Headless launch omits the cameras while keeping the scalar sensors. Use `keyboard_teleop:=false` when commanding body velocities from a different ROS node, or `enable_teleop:=false` to disable the prototype controller and command thruster setpoints directly. Use `spawn_robot:=false` for the original pool-only scene. Compose mounts the configuration directory; edit the robot YAML and restart the service to apply it.
 
@@ -228,9 +228,13 @@ docker run --rm -e ROS_DOMAIN_ID=89 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/robot_smoke.py
 docker run --rm -e ROS_DOMAIN_ID=90 -v "$PWD/tests:/checks:ro" \
   robosub-simulation:pool python3 /checks/ros/bridge_smoke.py
+docker run --rm -e ROS_DOMAIN_ID=91 -v "$PWD/tests:/checks:ro" \
+  robosub-simulation:pool python3 /checks/ros/sonar_smoke.py
 ```
 
-The 52 Python tests cover pool geometry and configuration, robot XML, sensor and camera mounts and driver conversions, CAD inertia conversion, neutral displacement, agreement with the `robosub-ros2` wrench matrix, thruster allocation, actuator frame invariance and controller limits. The ROS checks exercise the actual Stonefish physics and built-in sensors; the bridge check drives the thrusters through `/controls/thruster_allocs`.
+The 63 Python tests cover pool geometry and configuration, robot XML, sensor and camera mounts and driver conversions, CAD inertia conversion, neutral displacement, agreement with the `robosub-ros2` wrench matrix, thruster allocation, actuator frame invariance, controller limits, and simulated sonar sweeps of a known wall. The ROS checks exercise the actual Stonefish physics and built-in sensors; the bridge check drives the thrusters through `/controls/thruster_allocs`, and the sonar check compares wall normals with ground truth.
+
+The simulated sonar reproduces `robosub-ros2` as it is, including a sweep-width assumption: its processing maps every sweep onto a 90 degree quadrant, so sweeps narrower than ±45° report the wall normal offset by `45° - half_span` (about 20° for the ±25° sweep in `robot/crush.py`). The echo model is not calibrated; compare against recorded Ping360 sweeps of a pool wall.
 
 With the browser viewer running, install the browser test dependencies and run the UI check:
 

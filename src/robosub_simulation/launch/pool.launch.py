@@ -125,6 +125,16 @@ def _launch_pool(context):
                 output='screen',
             )
         )
+        actions.append(
+            Node(
+                package='robosub_simulation',
+                executable='sim_sonar',
+                namespace='simulation',
+                name='sim_sonar',
+                parameters=[{'robot_config': value('robot_config')}],
+                output='screen',
+            )
+        )
     if teleop:
         mixer = Node(
             package='robosub_simulation',

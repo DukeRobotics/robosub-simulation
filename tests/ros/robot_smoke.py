@@ -98,7 +98,7 @@ def main():
                 assert sonar.wait_for_service(timeout_sec=3), 'task_planning blocks without /sonar/request'
                 future = sonar.call_async(SonarSweepRequest.Request(start_angle=-15.0, end_angle=15.0, distance_of_scan=10.0))
                 rclpy.spin_until_future_complete(node, future, timeout_sec=3)
-                assert future.done() and future.result().success and not future.result().is_object
+                assert future.done() and future.result().success, 'Simulated sonar sweep failed'
                 position = messages['ground_truth'].pose.pose.position
                 assert 0.8 < position.z < 1.2, f'Incorrect spawn depth: {position.z}'
                 assert np.linalg.norm(velocity()) < 0.01, f'Neutral-buoyancy drift: {velocity()}'
@@ -160,7 +160,7 @@ def main():
         print(content[-1800:])
         assert process.returncode == 0
         assert 'process has died' not in content, 'A simulator process crashed during shutdown'
-        assert content.count('process has finished cleanly') == 3, 'Simulator, adapter and mixer must stop cleanly'
+        assert content.count('process has finished cleanly') == 4, 'Simulator, adapter, sonar and mixer must stop cleanly'
         print(
             'PASS: neutral spawn, real sensor messages, robosub-ros2 sensor topics, six-axis thruster motion, '
             'command timeout, clean shutdown'

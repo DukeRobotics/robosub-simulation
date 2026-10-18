@@ -4,7 +4,6 @@ import math
 
 import rclpy
 from custom_msgs.msg import ThrusterAllocs
-from custom_msgs.srv import SonarSweepRequest
 from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from rclpy.executors import ExternalShutdownException
@@ -51,7 +50,6 @@ class SimAdapter(Node):
         self.create_subscription(FluidPressure, RAW + 'pressure', self.pressure_received, 10)
         self.create_subscription(DVL, RAW + 'dvl', self.dvl_received, 10)
         self.create_timer(1.0, lambda: self.voltage.publish(Float64(data=VOLTAGE)))
-        self.create_service(SonarSweepRequest, '/sonar/request', self.sonar_requested)
         # Stands in for offboard_comms thrusters.py and the ESCs. Run with enable_teleop:=false so
         # robosub-ros2 controls is the only source of setpoints; thruster watchdogs stop the rotors
         # when controls is disabled and stops publishing.
@@ -76,14 +74,6 @@ class SimAdapter(Node):
             self.get_logger().warning(f'Ignoring thruster allocations: {list(message.allocs)}', throttle_duration_sec=5)
             return
         self.setpoints.publish(Float64MultiArray(data=rotor_setpoints(message.allocs).tolist()))
-
-    def sonar_requested(self, request, response):
-        # ponytail: sees nothing yet; a Stonefish MSIS sweep through sonar.py's pipeline replaces this.
-        # Validation follows sonar.py perform_sonar_request.
-        response.success = request.start_angle <= request.end_angle and request.distance_of_scan >= 0
-        response.message = 'Simulated sonar: no object detected' if response.success else 'Invalid sweep'
-        response.is_object = False
-        return response
 
     def camera_received(self, message, frame, publisher):
         output = CompressedImage()

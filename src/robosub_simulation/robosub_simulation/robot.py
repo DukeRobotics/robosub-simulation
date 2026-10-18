@@ -64,6 +64,7 @@ def load_robot_config(path):
     config = yaml.safe_load(path.read_text())
     config['model_data'] = yaml.safe_load((path.parent / config['model']).read_text())
     root = path.parent / config['robosub_ros2']
+    config['robosub_ros2'] = str(root)
     transforms, thrusters, cameras = read_robosub_ros2(root, config['robot'])
     config['drivers'] = read_drivers(root, config['robot'])
     vectornav = config['drivers']['imu']
@@ -78,7 +79,7 @@ def load_robot_config(path):
             sensor['frame'],
             # A Stonefish DVL looks along its -z, so it takes the robosub-ros2 frame itself.
             (lambda matrix: sim_rpy(matrix, reports_frame_axes=True)) if name == 'dvl' else sim_rpy,
-            rate=sensor['rate'],
+            **{key: value for key, value in sensor.items() if key != 'frame'},
         )
         for name, sensor in config['sensors'].items()
     }
@@ -189,6 +190,10 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
     ET.SubElement(dvl, 'range', velocity='3 3 3', altitude_min='0.1', altitude_max='10')
     ET.SubElement(dvl, 'noise', velocity='0.002', altitude='0.005')
     dvl.find('ros_publisher').set('altitude_topic', '/simulation/crush/dvl/altitude')
+    sonar = config['sensors']['sonar']
+    scanner = mounted('sonar', 'multibeam', sonar)
+    ET.SubElement(scanner, 'specs', fov='360', steps='400')  # one ray per Ping360 gradian
+    ET.SubElement(scanner, 'range', distance_min=format(sonar['range'][0], 'g'), distance_max=format(sonar['range'][1], 'g'))
     if cameras:
         for name, mount in config['cameras'].items():
             camera = mounted(f'camera/{name}', 'camera', mount)

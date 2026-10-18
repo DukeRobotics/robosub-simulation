@@ -25,6 +25,9 @@ sensors:
   gyro: {frame: gyro, rate: 100}
   pressure: {frame: pressure_sensor, rate: 20}
   dvl: {frame: dvl, rate: 10}
+  # Ping360 head: a horizontal ray fan, one ray per gradian, sampled per angle during a sweep. Rays start
+  # outside the hull; ponytail: rays are thin, so the 25 degree vertical beam (floor returns) is not modelled.
+  sonar: {frame: sonar_ping_360, rate: 20, range: [0.45, 50.0]}
 # Every usb_cameras entry in the cv config. ponytail: 5 Hz because software rendering is slow; raise it on a GPU host.
 camera_rate: 5
 teleop:
