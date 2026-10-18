@@ -36,12 +36,15 @@ class SimAdapter(Node):
         self.body = None
         self.depth = Depth()
         self.gyro = Gyro(sensors['gyro']['rate'])
+        drivers = config['drivers']
+        self.vectornav = drivers['imu']
+        # Topics set in robosub-ros2 configs come from them; the rest are constants in its driver code.
         self.imu = self.create_publisher(Imu, '/vectornav/imu', 10)
-        self.depth_publisher = self.create_publisher(PoseWithCovarianceStamped, '/sensors/depth', 10)
+        self.depth_publisher = self.create_publisher(PoseWithCovarianceStamped, drivers['depth_topic'], 10)
         self.dvl = self.create_publisher(Odometry, '/sensors/dvl/odom', 10)
         self.gyro_rate = self.create_publisher(TwistWithCovarianceStamped, '/sensors/gyro/angular_velocity/twist', 50)
         self.gyro_yaw = self.create_publisher(PoseWithCovarianceStamped, '/sensors/gyro/angular_position/pose', 50)
-        self.voltage = self.create_publisher(Float64, '/sensors/voltage', 1)
+        self.voltage = self.create_publisher(Float64, drivers['voltage_topic'], 1)
         self.create_subscription(Odometry, RAW + 'ground_truth', self.ground_truth_received, 10)
         self.create_subscription(Imu, RAW + 'imu', self.imu_received, 10)
         self.create_subscription(Imu, RAW + 'gyro', self.gyro_received, 50)
@@ -102,17 +105,14 @@ class SimAdapter(Node):
             return
         output = Imu()
         output.header.stamp = message.header.stamp
-        output.header.frame_id = 'imu'
+        output.header.frame_id = self.vectornav['frame']
         # use_enu: false passes rates and specific force through in the VN100's FRD body axes.
         output.angular_velocity = message.angular_velocity
         output.linear_acceleration = message.linear_acceleration
         output.orientation = orientation(vectornav_orientation(self.body, self.mount))
-        for covariance in (
-            output.orientation_covariance,
-            output.angular_velocity_covariance,
-            output.linear_acceleration_covariance,
-        ):
-            covariance[0] = covariance[4] = covariance[8] = COVARIANCE
+        output.orientation_covariance = self.vectornav['orientation']
+        output.angular_velocity_covariance = self.vectornav['angular_velocity']
+        output.linear_acceleration_covariance = self.vectornav['linear_acceleration']
         self.imu.publish(output)
 
     def gyro_received(self, message):

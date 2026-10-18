@@ -19,9 +19,9 @@ thruster:
 # the horizontal thrusters, which robosub-ros2 places symmetrically about base_link; confirm on the vehicle.
 base_link: [-0.06233, 0.0, -0.0066]
 # Simulated sensors and their robosub-ros2 static-transform frames. Rates (Hz) follow each real
-# driver; the fiber-optic gyro runs at 1 kHz on hardware.
+# driver; the fiber-optic gyro runs at 1 kHz on hardware. The IMU frame, rate and covariances come
+# from vectornav/config/vectornav.yaml.
 sensors:
-  imu: {frame: imu, rate: 20}
   gyro: {frame: gyro, rate: 100}
   pressure: {frame: pressure_sensor, rate: 20}
   dvl: {frame: dvl, rate: 10}

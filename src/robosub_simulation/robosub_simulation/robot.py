@@ -12,6 +12,10 @@ from robosub_simulation.pool import _vector
 from robosub_simulation.sensors import rotation, sim_camera_rpy, sim_position, sim_rpy
 
 
+# VN100 binary outputs run at the 800 Hz IMU rate divided by rateDivisor.
+VN100_RATE = 800.0
+
+
 def read_robosub_ros2(root, robot):
     """Static transforms by child frame, thrusters and USB cameras from a robosub-ros2 checkout."""
 
@@ -20,6 +24,25 @@ def read_robosub_ros2(root, robot):
 
     transforms = {item['child_frame_id']: item for item in read('static_transforms')['transforms'].values()}
     return transforms, read('controls')['thrusters'], read('cv')['usb_cameras']
+
+
+def read_drivers(root, robot):
+    """VectorNav driver parameters and peripheral sensor topics from a robosub-ros2 checkout."""
+    vectornav = yaml.safe_load((Path(root) / 'onboard/src/vectornav/vectornav/config/vectornav.yaml').read_text())
+    device, output = vectornav['vectornav']['ros__parameters'], vectornav['vn_sensor_msgs']['ros__parameters']
+    if output['use_enu']:
+        raise ValueError('sim_adapter reproduces the VN100 driver with use_enu: false only')
+    offboard = yaml.safe_load((Path(root) / 'onboard/src/offboard_comms/config' / f'{robot}.yaml').read_text())
+    topics = {sensor['type']: sensor['topic'] for sensor in offboard['arduino']['peripheral']['sensors']}
+    return {
+        'imu': {
+            'frame': device['frame_id'],
+            'rate': VN100_RATE / device['BO1']['rateDivisor'],
+            **{name: output[f'{name}_covariance'] for name in ('orientation', 'angular_velocity', 'linear_acceleration')},
+        },
+        'depth_topic': topics['pressure'],
+        'voltage_topic': topics['voltage'],
+    }
 
 
 def resolve(transforms, frame):
@@ -40,7 +63,11 @@ def load_robot_config(path):
     path = Path(path)
     config = yaml.safe_load(path.read_text())
     config['model_data'] = yaml.safe_load((path.parent / config['model']).read_text())
-    transforms, thrusters, cameras = read_robosub_ros2(path.parent / config['robosub_ros2'], config['robot'])
+    root = path.parent / config['robosub_ros2']
+    transforms, thrusters, cameras = read_robosub_ros2(root, config['robot'])
+    config['drivers'] = read_drivers(root, config['robot'])
+    vectornav = config['drivers']['imu']
+    config['sensors']['imu'] = {'frame': vectornav['frame'], 'rate': vectornav['rate']}
 
     def mount(frame, orient=sim_rpy, **values):
         position, matrix = resolve(transforms, frame)
@@ -138,7 +165,7 @@ def build_robot(config, *, cameras=True, spawn=(0.0, 0.0, 1.0)):
         ET.SubElement(thrust, 'thrust_coeff', value=str(specifications['max_force'] / specifications['max_omega'] ** 2))
 
     def sensor(name, kind, rate, position=None, rpy=(0, 0, 0)):
-        element = ET.SubElement(robot, 'sensor', name=name, type=kind, rate=str(rate))
+        element = ET.SubElement(robot, 'sensor', name=name, type=kind, rate=format(rate, 'g'))
         ET.SubElement(element, 'link', name='base_link')
         position = model['center_of_mass'] if position is None else position
         ET.SubElement(element, 'origin', xyz=_vector(position), rpy=_vector(rpy))

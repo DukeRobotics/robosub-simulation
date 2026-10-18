@@ -48,6 +48,7 @@ RUN git init /opt/robosub-ros2 \
     && git -C /opt/robosub-ros2 fetch --depth 1 --filter=blob:none origin ${ROBOSUB_ROS2_REF} \
     && git -C /opt/robosub-ros2 checkout FETCH_HEAD -- core/src/custom_msgs \
        onboard/src/static_transforms/config onboard/src/controls/config onboard/src/cv/config \
+       onboard/src/vectornav/vectornav/config onboard/src/offboard_comms/config \
     && rm -rf /opt/robosub-ros2/.git \
     && cp -r /opt/robosub-ros2/core/src/custom_msgs src/custom_msgs \
     && . /opt/ros/jazzy/setup.sh \

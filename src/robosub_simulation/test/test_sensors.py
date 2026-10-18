@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from robosub_simulation.robot import build_robot, load_robot_config, read_robosub_ros2
+from robosub_simulation.robot import build_robot, load_robot_config, read_drivers, read_robosub_ros2
 from PIL import Image
 from robosub_simulation.sensors import (
     Depth,
@@ -45,6 +45,11 @@ def test_poses_come_from_the_robosub_ros2_configs():
         np.testing.assert_allclose(mount['position'], sim_position(CONFIG, expected), err_msg=name)
     assert [thruster['name'] for thruster in CONFIG['thrusters']] == [thruster['name'] for thruster in thrusters]
     assert set(CONFIG['cameras']) == set(cameras)
+    drivers = read_drivers(CONFIG['robosub_ros2'], CONFIG['robot'])
+    assert CONFIG['sensors']['imu']['frame'] == drivers['imu']['frame'] == 'imu'
+    assert CONFIG['sensors']['imu']['rate'] == 20  # BO1 rateDivisor 40
+    assert drivers['depth_topic'] == '/sensors/depth' and drivers['voltage_topic'] == '/sensors/voltage'
+    assert len(drivers['imu']['angular_velocity']) == 9
     for name, camera in cameras.items():
         assert CONFIG['cameras'][name]['frame'] == camera['frame_id']
         assert CONFIG['cameras'][name]['topic'] == camera['topic']

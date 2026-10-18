@@ -70,7 +70,7 @@ The CAD visual keeps the exported dimensions (about 0.616 × 0.652 × 0.380 m). 
 | `/simulation/crush/dvl/altitude` | `sensor_msgs/msg/Range`, distance to the floor |
 | `/simulation/crush/camera/{front,bottom}/image_color` | `sensor_msgs/msg/Image`, 640 × 480 USB camera mounts at 5 Hz |
 
-These are raw simulator topics in Stonefish's frame conventions. Sensor, camera and thruster poses, camera resolution, field of view, frames and topics come from `robosub-ros2` itself: `onboard/src/{static_transforms,controls,cv}/config/crush.yaml`, read at launch. The image contains those files at the pinned `robosub-2026` commit (`ROBOSUB_ROS2_REF` in the Dockerfile). To follow a local checkout instead, mount it:
+These are raw simulator topics in Stonefish's frame conventions. Sensor, camera and thruster poses, camera resolution, field of view, frames and topics come from `robosub-ros2` itself: `onboard/src/{static_transforms,controls,cv,offboard_comms}/config/crush.yaml` and the VectorNav `vectornav.yaml` (IMU frame, rate and covariances), read at launch. Constants inside the drivers' code (depth density and filter, VN100 orientation formula, fixed topic names) are reproduced in `sim_adapter`. The image contains those files at the pinned `robosub-2026` commit (`ROBOSUB_ROS2_REF` in the Dockerfile). To follow a local checkout instead, mount it:
 
 ```bash
 ROBOSUB_ROS2=../robosub-ros2 docker compose -f compose.yaml -f compose.robosub-ros2.yaml up
