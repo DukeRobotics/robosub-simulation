@@ -72,8 +72,8 @@ def main():
             assert result.is_object and abs(normal + math.degrees(truth)) < 3, 'Wall normal disagrees with ground truth'
             assert 2.0 < duration < 6.0, 'A 90 degree, 7 m sweep should take as long as the real Ping360'
         result, _ = sweep(25)
-        print(f'+/-25 deg sweep: normal {math.degrees(result.normal_angle):+.1f} deg '
-              '(robosub-ros2 reads narrow sweeps offset by 45 - 25 = 20 deg)', flush=True)
+        print(f'+/-25 deg sweep: normal {math.degrees(result.normal_angle):+.1f} deg, expected '
+              f'{-math.degrees(yaw()):+.1f} with sweep_center_angle or 20 deg more without it', flush=True)
     finally:
         process.send_signal(signal.SIGINT)
         process.wait(timeout=20)

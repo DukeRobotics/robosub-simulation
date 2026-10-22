@@ -39,6 +39,25 @@ def driver_constants(root):
     return constants
 
 
+def sweep_center(root):
+    """robosub-ros2's sweep_center_angle(rows) from sonar_utils.py, or its older fixed pi/4 centre.
+
+    Only that function is loaded: the module imports ROS packages the simulator does not need.
+    """
+    tree = ast.parse((Path(root) / 'onboard/src/sonar/sonar/sonar_utils.py').read_text())
+    wanted = {'sweep_center_angle', 'MAX_SWEEP_ROWS'}
+    body = [
+        item for item in tree.body
+        if (isinstance(item, ast.FunctionDef) and item.name in wanted)
+        or (isinstance(item, ast.Assign) and any(getattr(t, 'id', None) in wanted for t in item.targets))
+    ]
+    if not any(isinstance(item, ast.FunctionDef) for item in body):
+        return lambda rows: TRANSFORMATION_ANGLE
+    namespace = {'np': np}
+    exec(compile(ast.Module(body=body, type_ignores=[]), 'sonar_utils.py', 'exec'), namespace)  # noqa: S102
+    return namespace['sweep_center_angle']
+
+
 def incidences(angles, ranges):
     """Angle between each ray and the surface it hits, from the neighbouring hits of a 360-degree scan."""
     points = np.column_stack((ranges * np.cos(angles), ranges * np.sin(angles)))
@@ -55,12 +74,13 @@ class Ping360:
         root = Path(root)
         self.constants = driver_constants(root)
         config = yaml.safe_load((root / 'onboard/src/sonar/config' / f'{robot}.yaml').read_text())
-        self.center = config['center_gradians']
+        self.center_gradians = config['center_gradians']
         self.ccw = config['increase_ccw']
         sys.path.insert(0, str(root / 'onboard/src/sonar'))
         from sonar import sonar_object_detection
 
         self.detection = sonar_object_detection
+        self.center = sweep_center(root)
         self.samples = self.constants['DEFAULT_NUMER_OF_SAMPLES']
         self.random = np.random.default_rng(seed)
         self.set_range(self.constants['DEFAULT_RANGE'])
@@ -80,11 +100,11 @@ class Ping360:
 
     def gradians(self, degrees):
         """sonar_utils degrees_to_centered_gradians."""
-        return int(degrees * GRADIANS_PER_CIRCLE / 360 * (1 if self.ccw else -1) + self.center)
+        return int(degrees * GRADIANS_PER_CIRCLE / 360 * (1 if self.ccw else -1) + self.center_gradians)
 
     def bearing(self, gradians):
         """sonar_utils centered_gradians_to_radians: counter-clockwise from the sonar's forward axis."""
-        return (gradians - self.center) * 2 * math.pi / GRADIANS_PER_CIRCLE * (1 if self.ccw else -1)
+        return (gradians - self.center_gradians) * 2 * math.pi / GRADIANS_PER_CIRCLE * (1 if self.ccw else -1)
 
     def echo(self, hit):
         """One Ping360 intensity row: speckled noise floor plus a wall echo weaker at grazing incidence."""
@@ -143,16 +163,17 @@ class Ping360:
             return None
         x_index, y_index = segment.get_average_coordinate_of_points()
         normal = segment.ortho_regression.unit_normal
+        center = float(self.center(sweep.shape[0]))
         return {
-            'pose': self.robot_position(x_index, y_index),
-            'normal_angle': float(np.arctan2(normal[1], normal[0]) - math.pi / 4),
-            'angle_of_wall': float(np.arctan(segment.ortho_regression.slope) + math.pi / 4),
+            'pose': self.robot_position(x_index, y_index, center),
+            'normal_angle': float(np.arctan2(normal[1], normal[0]) - center),
+            'angle_of_wall': float(np.arctan(segment.ortho_regression.slope) + center),
         }
 
-    def robot_position(self, x_index, y_index):
+    def robot_position(self, x_index, y_index, center):
         """sonar_utils to_robot_position as (x, y, yaw)."""
         x, y = ((index + 0.5) * self.metres_per_sample for index in (x_index, y_index))
         sign = -1.0 if self.constants['NEGATE_POSE'] else 1.0
-        cos, sin = math.cos(TRANSFORMATION_ANGLE), math.sin(TRANSFORMATION_ANGLE)
+        cos, sin = math.cos(center), math.sin(center)
         x, y = (x * cos + y * sin) * sign, (-x * sin + y * cos) * sign
         return x, y, math.atan2(y, x)

@@ -35,12 +35,13 @@ def test_ninety_degree_sweep_returns_the_turn_that_squares_up_to_the_wall(ping, 
 
 
 @pytest.mark.parametrize('half_span', [15, 25])
-def test_narrow_sweeps_carry_robosub_ros2s_ninety_degree_assumption(ping, half_span):
-    # robosub-ros2 robosub-2026: init_cartesian and the -pi/4 offset assume a 100-gradian sweep, so a
-    # square-on wall reads (45 - half_span) degrees off. Reproduced as-is; update this test when it is fixed.
+def test_narrow_sweeps_follow_robosub_ros2s_sweep_centre(ping, half_span):
+    # robosub-ros2 at 68f6d1d centres every sweep at pi/4, so a square-on wall reads (45 - half_span) degrees off;
+    # sonar_utils.sweep_center_angle (fix/sonar-normal-angle) centres it on the sweep. The sim runs whichever exists.
+    fixed = ping.center(50) != pytest.approx(math.pi / 4)
     result = ping.request(-half_span, half_span, 8, wall(3.0, 0.0))
     assert result['is_object']
-    assert math.degrees(result['normal_angle']) == pytest.approx(45 - half_span, abs=3)
+    assert math.degrees(result['normal_angle']) == pytest.approx(0 if fixed else 45 - half_span, abs=3)
 
 
 def test_open_water_and_invalid_requests(ping):

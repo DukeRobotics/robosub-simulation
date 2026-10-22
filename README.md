@@ -234,7 +234,7 @@ docker run --rm -e ROS_DOMAIN_ID=91 -v "$PWD/tests:/checks:ro" \
 
 The 63 Python tests cover pool geometry and configuration, robot XML, sensor and camera mounts and driver conversions, CAD inertia conversion, neutral displacement, agreement with the `robosub-ros2` wrench matrix, thruster allocation, actuator frame invariance, controller limits, and simulated sonar sweeps of a known wall. The ROS checks exercise the actual Stonefish physics and built-in sensors; the bridge check drives the thrusters through `/controls/thruster_allocs`, and the sonar check compares wall normals with ground truth.
 
-The simulated sonar reproduces `robosub-ros2` as it is, including a sweep-width assumption: its processing maps every sweep onto a 90 degree quadrant, so sweeps narrower than ±45° report the wall normal offset by `45° - half_span` (about 20° for the ±25° sweep in `robot/crush.py`). The echo model is not calibrated; compare against recorded Ping360 sweeps of a pool wall.
+The simulated sonar runs whichever `robosub-ros2` sonar code it is given, including its sweep centre: at the pinned commit every sweep is centred at 45°, so sweeps narrower than ±45° report the wall normal offset by `45° - half_span` (about 20° for the ±25° sweep in `robot/crush.py`); with `sonar_utils.sweep_center_angle` from `fix/sonar-normal-angle` the offset is gone. The echo model is not calibrated; compare against recorded Ping360 sweeps of a pool wall.
 
 With the browser viewer running, install the browser test dependencies and run the UI check:
 
